@@ -5,3 +5,5 @@ data:
 kind: ConfigMap
 metadata:
   name: system-prompt
+  annotations:
+    helm.sh/weight: "0"

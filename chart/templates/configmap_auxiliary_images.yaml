@@ -1,0 +1,10 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: guardrails-orchestrator-config
+  annotations:
+    helm.sh/weight: "0"
+data:
+  regexDetectorImage: 'quay.io/trustyai/regex-detector:latest'
+  vllmGatewayImage: 'quay.io/trustyai/vllm-orchestrator-gateway:latest'

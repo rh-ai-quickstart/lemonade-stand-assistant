@@ -1,0 +1,121 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio-storage-guardrail-detectors
+  annotations:
+    helm.sh/weight: "-5"
+spec:
+  ports:
+    - name: minio-client-port
+      port: 9000
+      protocol: TCP
+      targetPort: 9000
+  selector:
+    app: minio-storage-guardrail-detectors
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: minio-storage-guardrail-detectors-claim
+  annotations:
+    helm.sh/weight: "-5"
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 50Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: minio-storage-guardrail-detectors
+  annotations:
+    helm.sh/weight: "-4"
+  labels:
+    app: minio-storage-guardrail-detectors 
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: minio-storage-guardrail-detectors 
+  template: 
+    metadata:
+      labels:
+        app: minio-storage-guardrail-detectors
+        maistra.io/expose-route: 'true'
+      name: minio-storage-guardrail-detectors
+    spec:
+      volumes:
+      - name: model-volume
+        persistentVolumeClaim:
+          claimName: minio-storage-guardrail-detectors-claim
+      initContainers:
+        - name: download-model
+          image: quay.io/rgeada/llm_downloader:latest
+          command:
+            - bash
+            - -c
+            - |
+              models=(
+                ibm-granite/granite-guardian-hap-125m
+                protectai/deberta-v3-base-prompt-injection-v2
+                papluca/xlm-roberta-base-language-detection
+              )
+              echo "Starting download"
+              mkdir /mnt/models/llms/
+              for model in "${models[@]}"; do
+                echo "Downloading $model"
+                /tmp/venv/bin/huggingface-cli download $model --local-dir /mnt/models/huggingface/$(basename $model)
+              done
+
+              echo "Done!"
+          resources:
+            limits:
+              memory: "2Gi"
+              cpu: "1"
+          volumeMounts:
+            - mountPath: "/mnt/models/"
+              name: model-volume
+      containers:
+        - args:
+            - server
+            - /models
+          env:
+            - name: MINIO_ACCESS_KEY
+              value:  THEACCESSKEY
+            - name: MINIO_SECRET_KEY
+              value: THESECRETKEY
+          image: quay.io/trustyai/modelmesh-minio-examples:latest
+          name: minio
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
+          volumeMounts:
+            - mountPath: "/models/"
+              name: model-volume
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: minio-data-connection-detector-models
+  labels:
+    opendatahub.io/dashboard: 'true'
+    opendatahub.io/managed: 'true'
+  annotations:
+    helm.sh/weight: "-5"
+    opendatahub.io/connection-type: s3
+    openshift.io/display-name: Minio Data Connection - Guardrail Detector Models
+data: 
+  AWS_ACCESS_KEY_ID: VEhFQUNDRVNTS0VZ
+  AWS_DEFAULT_REGION: dXMtc291dGg= 
+  AWS_S3_BUCKET: aHVnZ2luZ2ZhY2U=
+  AWS_S3_ENDPOINT: aHR0cDovL21pbmlvLXN0b3JhZ2UtZ3VhcmRyYWlsLWRldGVjdG9yczo5MDAw 
+  AWS_SECRET_ACCESS_KEY: VEhFU0VDUkVUS0VZ 
+type: Opaque

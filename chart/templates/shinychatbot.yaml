@@ -3,6 +3,8 @@ kind: Deployment
 apiVersion: apps/v1
 metadata:
   name: lemonade-stand-assistant
+  annotations:
+    helm.sh/weight: "3"
   labels:
     app: lemonade-stand-assistant
 spec:
@@ -43,6 +45,8 @@ kind: Service
 apiVersion: v1
 metadata:
   name: lemonade-stand-assistant
+  annotations:
+    helm.sh/weight: "3"
   labels:
     app: lemonade-stand-assistant
 spec:
@@ -58,6 +62,8 @@ kind: Route
 apiVersion: route.openshift.io/v1
 metadata:
   name: lemonade-stand-assistant
+  annotations:
+    helm.sh/weight: "3"
 spec:
   to:
     kind: Service

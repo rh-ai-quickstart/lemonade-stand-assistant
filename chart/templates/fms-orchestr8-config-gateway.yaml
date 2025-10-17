@@ -3,7 +3,8 @@ kind: ConfigMap
 apiVersion: v1
 metadata:
   name: fms-orchestr8-config-gateway
-  namespace: lemonade-lover
+  annotations:
+    helm.sh/weight: "0"
   labels:
     app: fmstack-nlp
 data:
@@ -90,6 +91,6 @@ data:
       - name: hap
         detectors:
           - hap
-        fallback_message: "You know I cant let you ask me that."
+        fallback_message: "You know I can't let you ask me that."
       - name: passthrough
         detectors:

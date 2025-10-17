@@ -3,6 +3,8 @@ apiVersion: serving.kserve.io/v1alpha1
 kind: ServingRuntime
 metadata:
   name: guardrails-detector-runtime-hap
+  annotations:
+    helm.sh/weight: "0"
   labels:
     opendatahub.io/dashboard: 'true'
 spec:
@@ -27,7 +29,7 @@ spec:
           value: /mnt/models
         - name: HF_HOME
           value: /tmp/hf_home
-      image: quay.io/rgeada/guardrails-detector-huggingface
+      image: quay.io/trustyai/guardrails-detector-huggingface-runtime:v0.3.0
       name: kserve-container
       ports:
         - containerPort: 8000
@@ -41,16 +43,13 @@ apiVersion: serving.kserve.io/v1beta1
 kind: InferenceService
 metadata:
   annotations:
+    helm.sh/weight: "1"
     openshift.io/display-name: guardrails-detector-ibm-hap
     serving.knative.openshift.io/enablePassthrough: 'true'
     serving.kserve.io/deploymentMode: RawDeployment
     sidecar.istio.io/inject: 'true'
     sidecar.istio.io/rewriteAppHTTPProbers: 'true'
   name: guardrails-detector-ibm-hap
-
-  finalizers:
-    - odh.inferenceservice.finalizers
-    - inferenceservice.finalizers
   labels:
     opendatahub.io/dashboard: 'true'
 spec:
@@ -73,7 +72,7 @@ spec:
           nvidia.com/gpu: '1'
       runtime: guardrails-detector-runtime-hap
       storage:
-        key: aws-connection-minio-data-connection-detector-models
+        key: minio-data-connection-detector-models
         path: granite-guardian-hap-125m
     tolerations:
       - effect: NoSchedule

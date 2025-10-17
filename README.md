@@ -15,9 +15,9 @@ This demo showcases how to deploy an AI-powered customer service assistant with 
 The Lemonade Stand Assistant provides an interactive customer service experience for a fictional lemonade stand business. Customers can ask questions about products, ingredients, pricing, and more through a conversational interface.
 
 To ensure safe and appropriate interactions, the system employs multiple AI guardrails:
-- **IBM HAP Detector**: Monitors conversations for hate, abuse, and profanity
-- **Prompt Injection Detector**: Identifies and blocks attempts to manipulate the AI assistant
-- **Language Detector**: Ensures responses are in acceptable languages (English and Turkish)
+- **IBM HAP Detector (Granite Guardian)**: Monitors conversations for hate, abuse, and profanity
+- **Prompt Injection Detector (DeBERTa v3)**: Identifies and blocks attempts to manipulate the AI assistant
+- **Language Detector (XLM-RoBERTa)**: Ensures responses are in English only
 
 The guardrails orchestrator coordinates these detectors to evaluate inputs and outputs before presenting responses to users.
 
@@ -41,7 +41,7 @@ This demo is designed to run an LLM and guardrail models using GPU acceleration.
 - Memory: 4 GiB (request) / 8 GiB (limit)
 - GPU: 1 NVIDIA GPU
 
-**Prompt Injection Detector (Llama Prompt Guard 86M):**
+**Prompt Injection Detector (DeBERTa v3 Base):**
 - CPU: 1 vCPU (request) / 2 vCPU (limit)
 - Memory: 4 GiB (request) / 8 GiB (limit)
 - GPU: 1 NVIDIA GPU
@@ -131,8 +131,8 @@ The Lemonade Stand Assistant consists of the following components:
 **Inference Services:**
 - **Llama 3.2 3B Instruct**: Main language model for generating responses
 - **IBM HAP Detector (Granite Guardian HAP 125M)**: Detects hate, abuse, and profanity
-- **Prompt Injection Detector (Llama Prompt Guard 86M)**: Identifies prompt injection attempts
-- **Language Detector (XLM-RoBERTa Base)**: Validates language compliance (English/Turkish)
+- **Prompt Injection Detector (DeBERTa v3 Base)**: Identifies prompt injection attempts
+- **Language Detector (XLM-RoBERTa Base)**: Validates language compliance (English only)
 
 **Orchestration:**
 - **Guardrails Orchestrator**: Coordinates detector models using FMS Orchestr8
@@ -144,7 +144,7 @@ The Lemonade Stand Assistant consists of the following components:
 |-----------|-------|------|---------|
 | Main LLM | Llama 3.2 3B Instruct | 3B parameters | Conversational AI |
 | HAP Detection | Granite Guardian HAP | 125M parameters | Content safety |
-| Prompt Guard | Llama Prompt Guard | 86M parameters | Security |
+| Prompt Injection Guard | DeBERTa v3 Base | ~184M parameters | Security |
 | Language Detection | XLM-RoBERTa Base | ~270M parameters | Language validation |
 
 ### Deployment Configuration

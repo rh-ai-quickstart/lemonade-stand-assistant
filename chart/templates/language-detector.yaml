@@ -3,6 +3,8 @@ apiVersion: serving.kserve.io/v1alpha1
 kind: ServingRuntime
 metadata:
   name: guardrails-detector-runtime-language-detector
+  annotations:
+    helm.sh/weight: "0"
   labels:
     opendatahub.io/dashboard: 'true'
 spec:
@@ -28,8 +30,8 @@ spec:
         - name: HF_HOME
           value: /tmp/hf_home
         - name: SAFE_LABELS
-          value: '["en","tr"]'
-      image: 'quay.io/rh-ee-mmisiura/hf-detector:latest'
+          value: '["en"]'
+      image: quay.io/trustyai/guardrails-detector-huggingface-runtime:v0.3.0
       name: kserve-container
       ports:
         - containerPort: 8000
@@ -43,15 +45,13 @@ apiVersion: serving.kserve.io/v1beta1
 kind: InferenceService
 metadata:
   annotations:
+    helm.sh/weight: "1"
     openshift.io/display-name: language-detector
     serving.knative.openshift.io/enablePassthrough: 'true'
     serving.kserve.io/deploymentMode: RawDeployment
     sidecar.istio.io/inject: 'true'
     sidecar.istio.io/rewriteAppHTTPProbers: 'true'
   name: language-detector
-  finalizers:
-    - odh.inferenceservice.finalizers
-    - inferenceservice.finalizers
   labels:
     opendatahub.io/dashboard: 'true'
 spec:
@@ -74,7 +74,7 @@ spec:
           nvidia.com/gpu: '1'
       runtime: guardrails-detector-runtime-language-detector
       storage:
-        key: aws-connection-minio-data-connection-detector-models
+        key: minio-data-connection-detector-models
         path: xlm-roberta-base-language-detection
     tolerations:
       - effect: NoSchedule

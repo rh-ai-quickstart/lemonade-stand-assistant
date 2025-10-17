@@ -3,6 +3,7 @@ apiVersion: serving.kserve.io/v1alpha1
 kind: ServingRuntime
 metadata:
   annotations:
+    helm.sh/weight: "0"
     opendatahub.io/recommended-accelerators: '["nvidia.com/gpu"]'
     openshift.io/display-name: Guardrails Detector ServingRuntime for KServe
   name: guardrails-detector-runtime-prompt-injection
@@ -30,7 +31,7 @@ spec:
           value: /mnt/models
         - name: HF_HOME
           value: /tmp/hf_home
-      image: 'quay.io/trustyai/guardrails-detector-huggingface-runtime:v0.2.0'
+      image: quay.io/trustyai/guardrails-detector-huggingface-runtime:v0.3.0
       name: kserve-container
       ports:
         - containerPort: 8000
@@ -44,15 +45,13 @@ apiVersion: serving.kserve.io/v1beta1
 kind: InferenceService
 metadata:
   annotations:
+    helm.sh/weight: "1"
     openshift.io/display-name: prompt-injection-detector
     serving.knative.openshift.io/enablePassthrough: 'true'
     serving.kserve.io/deploymentMode: RawDeployment
     sidecar.istio.io/inject: 'true'
     sidecar.istio.io/rewriteAppHTTPProbers: 'true'
   name: prompt-injection-detector
-  finalizers:
-    - odh.inferenceservice.finalizers
-    - inferenceservice.finalizers
   labels:
     opendatahub.io/dashboard: 'true'
 spec:
@@ -75,8 +74,8 @@ spec:
           nvidia.com/gpu: '1'
       runtime: guardrails-detector-runtime-prompt-injection
       storage:
-        key: aws-connection-llm-data-connection
-        path: Llama-Prompt-Guard-2-86M
+        key: minio-data-connection-detector-models
+        path: deberta-v3-base-prompt-injection-v2
     tolerations:
       - effect: NoSchedule
         key: nvidia.com/gpu

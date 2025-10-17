@@ -3,6 +3,7 @@ apiVersion: serving.kserve.io/v1alpha1
 kind: ServingRuntime
 metadata:
   annotations:
+    helm.sh/weight: "0"
     opendatahub.io/accelerator-name: ''
     opendatahub.io/apiProtocol: REST
     opendatahub.io/template-display-name: vLLM
@@ -55,12 +56,10 @@ apiVersion: serving.kserve.io/v1beta1
 kind: InferenceService
 metadata:
   annotations:
+    helm.sh/weight: "1"
     openshift.io/display-name: llama-32
     serving.kserve.io/deploymentMode: RawDeployment
   name: llama-32
-  finalizers:
-    - odh.inferenceservice.finalizers
-    - inferenceservice.finalizers
   labels:
     opendatahub.io/dashboard: 'true'
 spec:
