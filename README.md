@@ -17,6 +17,8 @@ This demo showcases how to deploy an AI-powered customer service assistant with 
 3. Triggering of specific detectors are monitored and visualized. (Alerts are out of scope but could be done)
 
 
+**TO ADD** : architecture slide TBA
+
 ## Detailed description
 
 The Lemonade Stand Assistant provides an interactive customer service experience for a fictional lemonade stand business. Customers can ask questions about products, ingredients, pricing, and more through a conversational interface.
