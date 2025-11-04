@@ -24,9 +24,9 @@ This demo showcases how to deploy an AI-powered customer service assistant with 
 The Lemonade Stand Assistant provides an interactive customer service experience for a fictional lemonade stand business. Customers can ask questions about products, ingredients, pricing, and more through a conversational interface.
 
 To ensure safe and appropriate interactions, the system employs multiple AI guardrails:
-- **IBM HAP Detector (Granite Guardian)**: Monitors conversations for hate, abuse, and profanity
-- **Prompt Injection Detector (DeBERTa v3)**: Identifies and blocks attempts to manipulate the AI assistant
-- **Language Detector (XLM-RoBERTa)**: Ensures inputs and responses are in English only
+- **[IBM HAP Detector (Granite Guardian)](https://huggingface.co/ibm-granite/granite-guardian-hap-125m)**: Monitors conversations for hate, abuse, and profanity
+- **[Prompt Injection Detector (DeBERTa v3)](https://huggingface.co/protectai/deberta-v3-base-prompt-injection-v2)**: Identifies and blocks attempts to manipulate the AI assistant
+- **[Language Detector (XLM-RoBERTa)](https://huggingface.co/papluca/xlm-roberta-base-language-detection)**: Ensures inputs and responses are in English only
 
 Furthemore, there is a:
 - **Regex Detector**: Blocks specific text without the use of models. In our case, its other fruits we consider "competitors".
@@ -170,7 +170,7 @@ helm uninstall lemonade-stand-assistant --namespace ${PROJECT}
 The Lemonade Stand Assistant consists of the following components:
 
 **Inference Services:**
-- **Llama 3.2 3B Instruct**: Main language model for generating responses
+- **[Llama 3.2 3B Instruct](https://huggingface.co/RedHatAI/Llama-3.2-3B-Instruct-FP8-dynamic)**: Main language model for generating responses
 - **[IBM HAP Detector (Granite Guardian HAP 125M)](https://huggingface.co/ibm-granite/granite-guardian-hap-125m)**: Detects hate, abuse, and profanity
 - **[Prompt Injection Detector (DeBERTa v3 Base)](https://huggingface.co/protectai/deberta-v3-base-prompt-injection-v2)**: Identifies prompt injection attempts
 - **[Language Detector (XLM-RoBERTa Base)](https://huggingface.co/papluca/xlm-roberta-base-language-detection)**: Validates language compliance (English only)
