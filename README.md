@@ -1,167 +1,211 @@
-# [INSERT quickstart title here]
+# Lemonade Stand Assistant
 
-<!-- CONTRIBUTOR TODO: update title ^^
+## Acknowledgement
 
-*replace the H1 title above with your quickstart title*
+This quickstart is based on the demo by Trusty AI team. It can be found [here](https://github.com/trustyai-explainability/trustyai-llm-demo/tree/lemonade-stand). If you like this demo, we encourage people to contribute to the community of TrustyAI.
 
-TITLE requirements:
-	* MAX CHAR: 64 
-	* Industry use case, ie: Protect patient data with LLM guardrails
+## Overview
 
-TITLE will be extracted for publication.
+Imagine we run a successful lemonade stand and want to deploy a customer service agent so our customers can learn more about our products. We'll want to make sure all conversations with the agent are family friendly, and that it does not promote our rival fruit juice vendors.
 
--- > 
+This demo showcases how to deploy an AI-powered customer service assistant with multiple guardrails to ensure safe, compliant, and on-brand interactions. The solution uses [Llama 3.2](https://huggingface.co/RedHatAI/Llama-3.2-3B-Instruct-FP8-dynamic) as the base language model, protected by three detector models that monitor for harmful content, prompt injection attacks, and language compliance.
 
+**In this demo, we are following these assumptions of principles:** 
 
-
-<!-- CONTRIBUTOR TODO: short description 
-
-*ADD a SHORT DESCRIPTION of your use case between H1 title and next section*
-
-SHORT DESCRIPTION requirements:
-	* MAX CHAR: 160
-	* Describe the INDUSTRY use case 
-
-SHORT DESCRIPTION will be extracted for publication.
-
---> 
+1. The LLM is untrusted. All its output must be validated. 
+2. The user is untrusted. All the input must be validated.
+3. Triggering of specific detectors are monitored and visualized. (Alerts are out of scope but could be done)
 
 
-## Table of contents
-
-<!-- Table of contents is optional, but recommended. 
-
-REMEMBER: to remove this section if you don't use a TOC.
-
--->
+![architecture.png](./docs/images/architecture.png)
 
 ## Detailed description
 
-<!-- CONTRIBUTOR TODO: add detailed description.
+The Lemonade Stand Assistant provides an interactive customer service experience for a fictional lemonade stand business. Customers can ask questions about products, ingredients, pricing, and more through a conversational interface.
 
-This section is required. Describe the quickstart use case in more detail. 
+To ensure safe and appropriate interactions, the system employs multiple AI guardrails:
+- **[IBM HAP Detector (Granite Guardian)](https://huggingface.co/ibm-granite/granite-guardian-hap-125m)**: Monitors conversations for hate, abuse, and profanity
+- **[Prompt Injection Detector (DeBERTa v3)](https://huggingface.co/protectai/deberta-v3-base-prompt-injection-v2)**: Identifies and blocks attempts to manipulate the AI assistant
+- **[Language Detector (XLM-RoBERTa)](https://huggingface.co/papluca/xlm-roberta-base-language-detection)**: Ensures inputs and responses are in English only
 
-This is not a technical description. This is about the workload. 
+Furthemore, there is a:
+- **Regex Detector**: Blocks specific text without the use of models. In our case, its other fruits we consider "competitors".
 
-Technical description comes later.
+The guardrails orchestrator coordinates these detectors to evaluate inputs and outputs before presenting responses to users.
 
--->
+### See it in action
 
+**[▶️ View Interactive Demo](https://demo.arcade.software/X3orbmpyKdY295116jnY)**
 
-### See it in action 
+#### Monitoring Dashboard
 
-<!-- 
+The solution includes a Grafana dashboard for monitoring guardrail detections in real-time:
 
-*This section is optional but recommended*
+![Grafana Dashboard](./docs/images/grafana-dashboard.png)
 
-Arcades are a great way to showcase your quickstart before installation.
-
--->
-
-### Architecture diagrams
-
-<!-- CONTRIBUTOR TODO: add architecture diagram. 
-
-*Section is required. Put images in `docs/images` folder* 
-
---> 
-
+> **Optional**: To deploy the monitoring dashboard, see the [grafana](./grafana) folder for installation instructions. Note that deploying Grafana may require elevated cluster privileges to install the Grafana Operator.
 
 ## Requirements
 
+### Minimum hardware requirements
 
-### Minimum hardware requirements 
+**Llama 3.2 3B Instruct (Main LLM):**
+- CPU: 1 vCPU (request) / 4 vCPU (limit)
+- Memory: 8 GiB (request) / 20 GiB (limit)
+- GPU: 1 NVIDIA GPU (e.g., A10, A100, L40S, T4, or similar)
 
-<!-- CONTRIBUTOR TODO: add minimum hardware requirements
+**IBM HAP Detector (Granite Guardian HAP 125M):**
+- CPU: 1 vCPU (request) / 2 vCPU (limit)
+- Memory: 4 GiB (request) / 8 GiB (limit)
 
-*Section is required.* 
+**Prompt Injection Detector (DeBERTa v3 Base):**
+- CPU: 4 vCPU (request) / 8 vCPU (limit)
+- Memory: 16 GiB (request) / 24 GiB (limit)
 
-Be as specific as possible. DON'T say "GPU". Be specific.
+**Language Detector (XLM-RoBERTa Base):**
+- CPU: 4 vCPU (request) / 8 vCPU (limit)
+- Memory: 16 GiB (request) / 24 GiB (limit)
 
-List minimum hardware requirements.
+**Total Resource Requirements:**
+- CPU: 10 vCPU (request) / 22 vCPU (limit)
+- Memory: 44 GiB (request) / 72 GiB (limit)
+- GPU: 1 NVIDIA GPU (for LLM only)
 
---> 
+> **Note**: The detector models are configured to run on CPU by default. If you have additional GPU resources available and want to improve detector performance, you can enable GPU acceleration for the detectors. See the [Configuration Options](#configuration-options) section for details on customizing GPU usage.
 
 ### Minimum software requirements
 
-<!-- CONTRIBUTOR TODO: add minimum software requirements
-
-*Section is required.*
-
-Be specific. Don't say "OpenShift AI". Instead, tested with OpenShift AI 2.22
-
-If you know it only works in a specific version, say so. 
-
--->
+- Red Hat OpenShift Container Platform
+- Red Hat OpenShift AI
 
 ### Required user permissions
 
-<!-- CONTRIBUTOR TODO: add user permissions
-
-*Section is required. Describe the permissions the user will need. Cluster
-admin? Regular user?*
-
---> 
-
+You need to have cluster admin privileges to create guardrails orchestrator object.
 
 ## Deploy
 
-<!-- CONTRIBUTOR TODO: add installation instructions 
+### Prerequisites
 
-*Section is required. Include the explicit steps needed to deploy your
-quickstart. 
+Before deploying, ensure you have:
+- Access to a Red Hat OpenShift cluster with OpenShift AI installed
+- `oc` CLI tool installed and configured
+- `helm` CLI tool installed
+- Sufficient resources available in your cluster
 
-Assume user will follow your instructions EXACTLY. 
+### Installation
 
-If screenshots are included, remember to put them in the
-`docs/images` folder.*
+1. Clone the repository:
+```bash
+git clone https://github.com/rh-ai-quickstart/lemonade-stand-assistant.git
+cd lemonade-stand-assistant
+```
 
--->
+2. Create a new OpenShift project:
+```bash
+PROJECT="lemonade-stand-assistant"
+oc new-project ${PROJECT}
+```
 
-### Delete
+3. Install using Helm:
+```bash
+helm install lemonade-stand-assistant ./chart --namespace ${PROJECT}
+```
 
-<!-- CONTRIBUTOR TODO: add uninstall instructions
+### Configuration Options
 
-*Section required. Include explicit steps to cleanup quickstart.*
+The deployment can be customized through the `values.yaml` file. Each detector can be configured to run on GPU or CPU depending on your available resources.
 
-Some users may need to reclaim space by removing this quickstart. Make it easy.
+#### GPU Configuration
 
--->
+By default, only the LLM uses GPU acceleration. All detector models run on CPU.
 
-## References 
+Each detector supports the following configuration options:
 
-<!-- 
+- `useGpu`: Enable GPU acceleration for the detector (default: `false`)
+- `resources`: CPU and memory resource requests and limits
 
-*Section optional.* Remember to remove if do not use.
+**Example: Enable GPU for HAP detector (requires additional GPU)**
+```bash
+helm install lemonade-stand-assistant ./chart --namespace ${PROJECT} \
+  --set detectors.hap.useGpu=true
+```
 
-Include links to supporting information, documentation, or learning materials.
+**Example: Enable GPU for all detectors (requires 4 total GPUs)**
+```bash
+helm install lemonade-stand-assistant ./chart --namespace ${PROJECT} \
+  --set detectors.hap.useGpu=true \
+  --set detectors.promptInjection.useGpu=true \
+  --set detectors.language.useGpu=true
+```
 
---> 
+**Example: Custom resource allocation for HAP detector**
+```bash
+helm install lemonade-stand-assistant ./chart --namespace ${PROJECT} \
+  --set detectors.hap.resources.requests.memory=2Gi \
+  --set detectors.hap.resources.limits.memory=4Gi
+```
+
+### Validating the deployment
+
+Once deployed, access the Lemonade Stand Assistant UI. You can find the route with:
+
+```bash
+echo https://$(oc get route/lemonade-stand-assistant -n ${PROJECT} --template='{{.spec.host}}')
+```
+
+Open the URL in your browser and start asking questions about lemonade and other fruits!
+
+### Uninstall
+
+To remove the deployment:
+
+```bash
+helm uninstall lemonade-stand-assistant --namespace ${PROJECT}
+```
 
 ## Technical details
 
-<!-- 
+### Architecture
 
-*Section is optional.* 
+The Lemonade Stand Assistant consists of the following components:
 
-Here is your chance to share technical details. 
+**Inference Services:**
+- **[Llama 3.2 3B Instruct](https://huggingface.co/RedHatAI/Llama-3.2-3B-Instruct-FP8-dynamic)**: Main language model for generating responses
+- **[IBM HAP Detector (Granite Guardian HAP 125M)](https://huggingface.co/ibm-granite/granite-guardian-hap-125m)**: Detects hate, abuse, and profanity
+- **[Prompt Injection Detector (DeBERTa v3 Base)](https://huggingface.co/protectai/deberta-v3-base-prompt-injection-v2)**: Identifies prompt injection attempts
+- **[Language Detector (XLM-RoBERTa Base)](https://huggingface.co/papluca/xlm-roberta-base-language-detection)**: Validates language compliance (English only)
 
-Welcome to add sections as needed. Keep additions as structured and consistent as possible.
+**Orchestration:**
+- **Guardrails Orchestrator**: Coordinates detector models using FMS Orchestr8
+- **Shiny Application**: Provides the user interface for customer interactions
 
--->
+### Models
+
+| Component | Model | Size | Purpose |
+|-----------|-------|------|---------|
+| Main LLM | Llama 3.2 3B Instruct | 3B parameters | Conversational AI |
+| HAP Detection | Granite Guardian HAP | 125M parameters | Content safety |
+| Prompt Injection Guard | DeBERTa v3 Base | ~184M parameters | Security |
+| Language Detection | XLM-RoBERTa Base | ~270M parameters | Language validation |
+
+### Deployment Configuration
+
+All models are deployed as KServe InferenceServices on OpenShift AI using:
+- vLLM runtime for the main LLM (optimized inference)
+- Guardrails Detector runtime for all detector models
 
 ## Tags
 
-<!-- CONTRIBUTOR TODO: add metadata and tags for publication
+**Title:** Lemonade Stand Assistant
 
-TAG requirements: 
-	* Title: max char: 64, describes quickstart (match H1 heading) 
-	* Description: max char: 160, match SHORT DESCRIPTION above
-	* Industry: target industry, ie. Healthcare OR Financial Services
-	* Product: list primary product, ie. OpenShift AI OR OpenShift OR RHEL 
-	* Use case: use case descriptor, ie. security, automation, 
-	* Contributor org: defaults to Red Hat unless partner or community
-	
-Additional MIST tags, populated by web team.
+**Description:** AI-powered customer service assistant with guardrails for safe, compliant interactions using an LLM and multiple detector models.
 
--->
+**Industry:** Retail (but it can be applied any industry)
+
+**Product:** OpenShift AI, Trusty AI Guardrails Orchestrator feature
+
+**Use case:** AI safety, content moderation
+
+**Contributor org:** Red Hat
+
+

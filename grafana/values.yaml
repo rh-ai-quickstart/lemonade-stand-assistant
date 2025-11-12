@@ -1,0 +1,14 @@
+# Enable/disable the grafana operator installation
+operator: true
+
+# Grafana configuration
+grafana:
+  # Service account name
+  serviceAccount:
+    name: grafana-sa
+
+# Prometheus datasource configuration
+datasource:
+  prometheus:
+    url: https://thanos-querier.openshift-monitoring.svc.cluster.local:9091
+    timeInterval: 5s

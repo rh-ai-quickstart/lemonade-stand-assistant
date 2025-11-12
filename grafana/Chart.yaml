@@ -1,0 +1,6 @@
+apiVersion: v2
+name: lemonade-stand-grafana
+description: Grafana monitoring dashboard for Lemonade Stand Assistant
+type: application
+version: 0.1.0
+appVersion: "1.0"

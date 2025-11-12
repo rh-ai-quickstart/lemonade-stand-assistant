@@ -1,0 +1,77 @@
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: lemonade-stand-assistant
+  annotations:
+    helm.sh/weight: "3"
+  labels:
+    app: lemonade-stand-assistant
+    app.openshift.io/runtime: shiny
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lemonade-stand-assistant
+  template:
+    metadata:
+      labels:
+        app: lemonade-stand-assistant
+    spec:
+      containers:
+        - name: container
+          image: 'quay.io/rh-ai-quickstart/lemonade-stand:0.0.1'
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+          env:
+            - name: VLLM_API_KEY
+              value: fakekey
+            - name: VLLM_MODEL
+              value: llama32
+          volumeMounts:
+            - mountPath: /system-prompt
+              name: system-prompt
+          imagePullPolicy: Always
+      volumes:
+        - configMap:
+            defaultMode: 420
+            items:
+            - key: prompt
+              path: prompt
+            name: system-prompt
+          name: system-prompt
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: lemonade-stand-assistant
+  annotations:
+    helm.sh/weight: "3"
+  labels:
+    app: lemonade-stand-assistant
+spec:
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8080
+      targetPort: 8080
+  selector:
+    app: lemonade-stand-assistant
+---
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: lemonade-stand-assistant
+  annotations:
+    helm.sh/weight: "3"
+spec:
+  to:
+    kind: Service
+    name: lemonade-stand-assistant
+    weight: 100
+  port:
+    targetPort: 8080
+  tls:
+    termination: edge
+  wildcardPolicy: None

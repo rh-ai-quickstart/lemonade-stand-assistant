@@ -1,0 +1,10 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: system-prompt
+  annotations:
+    helm.sh/weight: "0"
+data:
+  prompt: |
+{{ .Values.prompt | indent 4 }}

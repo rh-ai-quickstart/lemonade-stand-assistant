@@ -1,0 +1,28 @@
+---
+apiVersion: trustyai.opendatahub.io/v1alpha1
+kind: GuardrailsOrchestrator
+metadata:
+  name: guardrails-orchestrator
+  annotations:
+    helm.sh/weight: "2"
+spec:
+  enableBuiltInDetectors: true
+  enableGuardrailsGateway: true
+  guardrailsGatewayConfig: fms-orchestr8-config-gateway
+  orchestratorConfig: fms-orchestr8-config-nlp
+  replicas: 1
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: guardrails-gateway
+  annotations:
+    helm.sh/weight: "2"
+spec:
+  selector:
+    app: guardrails-orchestrator
+    component: guardrails-orchestrator
+  ports:
+    - protocol: TCP
+      port: 8090
+      targetPort: 8090

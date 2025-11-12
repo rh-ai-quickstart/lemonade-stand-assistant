@@ -1,0 +1,22 @@
+FROM rocker/shiny:4.4.2
+LABEL maintainer="abanderb@redhat.com"
+LABEL description="R runtime image for dashboard demo."
+LABEL version="4.1"
+USER root
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libssl-dev \
+    libcurl4-openssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+# Install R packages
+RUN install2.r --error --skipinstalled --ncpus -1 \
+    httr2 \
+    ellmer \
+    shinychat
+RUN mkdir /application /.cache /application/www
+RUN chmod 775 /.cache /application/www
+COPY app.r /application
+WORKDIR /application
+USER 1001
+EXPOSE 8080
+ENTRYPOINT R -s -e 'source("/application/app.r")'

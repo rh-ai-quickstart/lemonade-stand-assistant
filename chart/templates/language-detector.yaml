@@ -1,0 +1,86 @@
+---
+apiVersion: serving.kserve.io/v1alpha1
+kind: ServingRuntime
+metadata:
+  name: guardrails-detector-runtime-language-detector
+  annotations:
+    helm.sh/weight: "0"
+  labels:
+    opendatahub.io/dashboard: 'true'
+spec:
+  annotations:
+    prometheus.io/path: /metrics
+    prometheus.io/port: '8080'
+  containers:
+    - args:
+        - '--workers'
+        - '4'
+        - '--host'
+        - 0.0.0.0
+        - '--port'
+        - '8000'
+        - '--log-config'
+        - /common/log_conf.yaml
+      command:
+        - uvicorn
+        - 'app:app'
+      env:
+        - name: MODEL_DIR
+          value: /mnt/models
+        - name: HF_HOME
+          value: /tmp/hf_home
+        - name: SAFE_LABELS
+          value: '["en"]'
+      image: quay.io/trustyai/guardrails-detector-huggingface-runtime:latest
+      name: kserve-container
+      ports:
+        - containerPort: 8000
+          protocol: TCP
+  multiModel: false
+  supportedModelFormats:
+    - autoSelect: true
+      name: guardrails-detector-huggingface
+---
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
+metadata:
+  annotations:
+    helm.sh/weight: "1"
+    openshift.io/display-name: language-detector
+    serving.kserve.io/deploymentMode: RawDeployment
+  name: language-detector
+  labels:
+    opendatahub.io/dashboard: 'true'
+spec:
+  predictor:
+    automountServiceAccountToken: false
+    maxReplicas: 1
+    minReplicas: 1
+    model:
+      modelFormat:
+        name: guardrails-detector-huggingface
+      name: ''
+      resources:
+        limits:
+          cpu: {{ .Values.detectors.language.resources.limits.cpu }}
+          memory: {{ .Values.detectors.language.resources.limits.memory }}
+          {{- if .Values.detectors.language.useGpu }}
+          nvidia.com/gpu: '1'
+          {{- end }}
+        requests:
+          cpu: {{ .Values.detectors.language.resources.requests.cpu }}
+          memory: {{ .Values.detectors.language.resources.requests.memory }}
+          {{- if .Values.detectors.language.useGpu }}
+          nvidia.com/gpu: '1'
+          {{- end }}
+      runtime: guardrails-detector-runtime-language-detector
+      storage:
+        key: minio-data-connection-detector-models
+        path: xlm-roberta-base-language-detection
+    {{- if .Values.detectors.language.useGpu }}
+    tolerations:
+      - effect: NoSchedule
+        key: nvidia.com/gpu
+        operator: Equal
+        value: Tesla-T4-SHARED
+    {{- end }}
