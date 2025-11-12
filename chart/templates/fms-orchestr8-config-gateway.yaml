@@ -69,6 +69,18 @@ data:
 
             # Mentions of system/developer instruction objects
             - '(?i)\b(system|developer)\s+(prompt|message|instructions?)\b'
+      - name: input_statistics
+        input: true
+        output: false
+        detector_params:
+         custom:    
+            - toxicity_tracker
+      - name: output_statistics
+        input: false 
+        output: true
+        detector_params:
+         custom:    
+            - refusal_tracker
       - name: hap
         input: true
         output: true
@@ -88,6 +100,7 @@ data:
           - hap
           - prompt_injection
           - language_detection
+          - output_statistics
         fallback_message: "I'm sorry I can't help with that. Is there anything else I can help you with?"
       - name: hap
         detectors:

@@ -10,6 +10,7 @@ spec:
   enableGuardrailsGateway: true
   guardrailsGatewayConfig: fms-orchestr8-config-gateway
   orchestratorConfig: fms-orchestr8-config-nlp
+  customDetectorsConfig: custom-detectors
   replicas: 1
 ---
 apiVersion: v1
