@@ -10,9 +10,23 @@ data:
     openai: 
       service:
         hostname: llama-32-predictor
-        port: 80
+        port: 8080
     detectors:
       regex_competitor:
+        type: text_contents
+        service:
+            hostname: "127.0.0.1"
+            port: 8080
+        chunker_id: whole_doc_chunker
+        default_threshold: 0.5
+      input_statistics:
+        type: text_contents
+        service:
+            hostname: "127.0.0.1"
+            port: 8080
+        chunker_id: whole_doc_chunker
+        default_threshold: 0.5
+      output_statistics:
         type: text_contents
         service:
             hostname: "127.0.0.1"
@@ -23,20 +37,20 @@ data:
         type: text_contents
         service:
           hostname: guardrails-detector-ibm-hap-predictor
-          port: 80
+          port: 8000
         chunker_id: whole_doc_chunker
         default_threshold: 0.5
       prompt_injection:
         type: text_contents
         service:
           hostname: prompt-injection-detector-predictor
-          port: 80
+          port: 8000
         chunker_id: whole_doc_chunker
         default_threshold: 0.5
       language_detection:
         type: text_contents
         service:
           hostname: language-detector-predictor
-          port: 80
+          port: 8000
         chunker_id: whole_doc_chunker
         default_threshold: 0.5

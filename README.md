@@ -28,8 +28,10 @@ To ensure safe and appropriate interactions, the system employs multiple AI guar
 - **[Prompt Injection Detector (DeBERTa v3)](https://huggingface.co/protectai/deberta-v3-base-prompt-injection-v2)**: Identifies and blocks attempts to manipulate the AI assistant
 - **[Language Detector (XLM-RoBERTa)](https://huggingface.co/papluca/xlm-roberta-base-language-detection)**: Ensures inputs and responses are in English only
 
-Furthemore, there is a:
+Furthermore, there are built-in detectors:
 - **Regex Detector**: Blocks specific text without the use of models. In our case, its other fruits we consider "competitors".
+- **Toxicity Tracker**: Monitors and measures toxicity levels in user input messages for analytics and monitoring
+- **Refusal Tracker**: Tracks when the LLM produces refusal messages to monitor assistant behavior
 
 The guardrails orchestrator coordinates these detectors to evaluate inputs and outputs before presenting responses to users.
 
@@ -174,6 +176,11 @@ The Lemonade Stand Assistant consists of the following components:
 - **[IBM HAP Detector (Granite Guardian HAP 125M)](https://huggingface.co/ibm-granite/granite-guardian-hap-125m)**: Detects hate, abuse, and profanity
 - **[Prompt Injection Detector (DeBERTa v3 Base)](https://huggingface.co/protectai/deberta-v3-base-prompt-injection-v2)**: Identifies prompt injection attempts
 - **[Language Detector (XLM-RoBERTa Base)](https://huggingface.co/papluca/xlm-roberta-base-language-detection)**: Validates language compliance (English only)
+
+**Built-in Custom Detectors:**
+- **Regex Detector**: Pattern-based blocking of competitor product mentions
+- **Toxicity Tracker**: LLM-as-a-judge detector that measures toxicity levels (0-3 scale) in user inputs and exposes Prometheus metrics for monitoring
+- **Refusal Tracker**: LLM-as-a-judge detector that identifies when the model produces refusal messages and tracks them via Prometheus metrics
 
 **Orchestration:**
 - **Guardrails Orchestrator**: Coordinates detector models using FMS Orchestr8
