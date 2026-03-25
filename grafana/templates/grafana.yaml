@@ -200,6 +200,7 @@ spec:
           name: "{{ .Values.grafana.serviceAccount.name }}-token"
           key: "token"
   datasource:
+      uid: prometheus
       access: proxy
       editable: true
       isDefault: true
@@ -273,7 +274,7 @@ spec:
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "79a73517-235d-43ef-9907-e01112e36b8b"
+            "uid": "prometheus"
           },
           "fieldConfig": {
             "defaults": {
@@ -418,7 +419,7 @@ spec:
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "79a73517-235d-43ef-9907-e01112e36b8b"
+            "uid": "prometheus"
           },
           "fieldConfig": {
             "defaults": {
@@ -524,7 +525,7 @@ spec:
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "7c53ed74-cc4f-4c5e-92d9-b7db51929506"
+                "uid": "prometheus"
               },
               "editorMode": "code",
               "expr": "sum(guardrail_requests_total)",
@@ -539,7 +540,7 @@ spec:
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "79a73517-235d-43ef-9907-e01112e36b8b"
+            "uid": "prometheus"
           },
           "fieldConfig": {
             "defaults": {
@@ -645,7 +646,7 @@ spec:
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "7c53ed74-cc4f-4c5e-92d9-b7db51929506"
+                "uid": "prometheus"
               },
               "editorMode": "code",
               "expr": "sum(guardrail_detections_by_direction{direction=\"input\"})",
@@ -660,7 +661,7 @@ spec:
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "79a73517-235d-43ef-9907-e01112e36b8b"
+            "uid": "prometheus"
           },
           "fieldConfig": {
             "defaults": {
@@ -766,7 +767,7 @@ spec:
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "7c53ed74-cc4f-4c5e-92d9-b7db51929506"
+                "uid": "prometheus"
               },
               "editorMode": "code",
               "expr": "sum(guardrail_detections_by_direction{direction=\"output\"})",
@@ -781,7 +782,7 @@ spec:
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "79a73517-235d-43ef-9907-e01112e36b8b"
+            "uid": "prometheus"
           },
           "fieldConfig": {
             "defaults": {
@@ -887,7 +888,7 @@ spec:
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "7c53ed74-cc4f-4c5e-92d9-b7db51929506"
+                "uid": "prometheus"
               },
               "editorMode": "code",
               "expr": "sum(guardrail_requests_total) - sum(guardrail_detections_total)",
