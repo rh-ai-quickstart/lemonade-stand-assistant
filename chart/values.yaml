@@ -4,28 +4,28 @@
 detectors:
   # IBM HAP Detector (Granite Guardian)
   hap:
-    useGpu: false
+    useGpu: true
     resources:
       requests:
-        cpu: '1'
-        memory: 4Gi
+        cpu: '3'
+        memory: 10Gi
       limits:
-        cpu: '2'
-        memory: 8Gi
+        cpu: '4'
+        memory: 12Gi
 
   # Prompt Injection Detector (DeBERTa v3)
   promptInjection:
-    useGpu: false
+    useGpu: true
     resources:
       requests:
-        cpu: '4'
-        memory: 16Gi
+        cpu: '3'
+        memory: 10Gi
       limits:
-        cpu: '8'
-        memory: 24Gi
+        cpu: '4'
+        memory: 12Gi
 
 # Enable openshift dashboard
 metrics:
   dashboard:
-    enabled: false # requires cluster-admin privileges to install the dashboard
+    enabled: true # requires cluster-admin privileges to install the dashboard
     odc: false

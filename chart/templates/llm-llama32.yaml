@@ -24,7 +24,7 @@ spec:
         - '--model=/mnt/models'
         - '--served-model-name=llama32'
         - '--max-model-len'
-        - '512'
+        - '4096'
         - '--max-num-seqs'
         - '384'
         - '--max-num-batched-tokens'
@@ -87,4 +87,7 @@ spec:
     tolerations:
       - effect: NoSchedule
         key: nvidia.com/gpu
+        operator: Exists
+      - effect: NoSchedule
+        key: largegpu
         operator: Exists

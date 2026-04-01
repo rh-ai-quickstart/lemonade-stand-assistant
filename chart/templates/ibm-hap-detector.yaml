@@ -80,4 +80,7 @@ spec:
       - effect: NoSchedule
         key: nvidia.com/gpu
         operator: Exists
+      - effect: NoSchedule
+        key: smallgpu
+        operator: Exists
     {{- end }}
