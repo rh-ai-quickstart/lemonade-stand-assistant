@@ -72,7 +72,7 @@ data:
           - Completely unrelated topics (politics, technology, relationships, etc.)
           - Non-lemon subjects disguised with lemon framing
 
-          User Input: "{{ user_input }}"
+          User Input: "{{ "{{ user_input }}" }}"
 
           Question: Is this message off-topic for a lemon specialist and should it be blocked? Answer only "yes" or "no".
           Answer:
