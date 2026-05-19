@@ -1,0 +1,40 @@
+FROM python:3.11-slim
+
+LABEL description="FastAPI chat application for lemonade stand demo"
+LABEL version="2.0"
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+# Create non-root user for OpenShift compatibility
+RUN useradd -m -u 1001 appuser
+
+# Set working directory
+WORKDIR /application
+
+# Install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY app_fastapi.py .
+COPY static/ ./static/
+
+# Create cache directory with proper permissions
+RUN mkdir -p /application/.cache && \
+    chown -R 1001:0 /application && \
+    chmod -R g=u /application
+
+# Switch to non-root user
+USER 1001
+
+# Expose port
+EXPOSE 8080
+
+# Health check using curl (lighter than python import)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')" || exit 1
+
+# Run with uvicorn - single worker for async, high concurrency
+CMD ["python", "-m", "uvicorn", "app_fastapi:app", "--host", "0.0.0.0", "--port", "8080"]

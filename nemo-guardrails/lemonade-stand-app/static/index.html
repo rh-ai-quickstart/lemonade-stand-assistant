@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#171A1C">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Lemonade Stand Chat</title>
+    <!-- Markdown parser -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        :root {
+            /* Neutrals (Grafana-aligned) */
+            --bg: #171A1C;
+            --panel: #1F242B;
+            --bubble-bot: #2B3440;
+            --bubble-user: #242B33;
+            --text: #E6E8EB;
+            --text-muted: #A7B0BA;
+            --border: #323A44;
+
+            /* Brand */
+            --redhat-red: #EE0000;
+
+            /* Semantic colors (Grafana dashboard aligned) */
+            --nonlemon: #FCE957;
+            --nonenglish: #8CA3EF;
+            --jailbreak: #C48AE6;
+            --swearing: #F86877;
+            --blocked: #D6182D;
+            --approved: #23782D;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            min-height: 100vh;
+            min-height: -webkit-fill-available; /* iOS Safari fix */
+            display: flex;
+            flex-direction: column;
+            color: var(--text);
+            /* Safe area for notched phones */
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+        }
+
+        html {
+            height: -webkit-fill-available; /* iOS Safari fix */
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            width: 100%;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: var(--redhat-red);
+            color: white;
+            padding: 18px 40px;
+            text-align: center;
+            font-size: 22px;
+            font-weight: 600;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .chatbot-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--panel);
+            padding: 8px 16px;
+            border-radius: 8px 8px 0 0;
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: -1px;
+        }
+
+        .chatbot-label svg {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+        }
+
+        .chat-container {
+            flex: 1;
+            background: var(--panel);
+            border-radius: 0 12px 12px 12px;
+            display: flex;
+            flex-direction: column;
+            min-height: 500px;
+            max-height: 70vh;
+            border: 1px solid var(--border);
+        }
+
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            scroll-behavior: smooth;
+        }
+
+        .examples-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex: 1;
+            padding: 40px;
+        }
+
+        .examples {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .example-btn {
+            background: var(--bubble-bot);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 20px 24px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 14px;
+            text-align: left;
+            min-width: 200px;
+            max-width: 280px;
+            transition: all 0.2s ease;
+            line-height: 1.4;
+        }
+
+        .example-btn:hover {
+            background: var(--bubble-user);
+            border-color: var(--text-muted);
+        }
+
+        .message {
+            margin: 8px 0;
+            padding: 12px 16px;
+            border-radius: 14px;
+            max-width: 80%;
+            line-height: 1.6;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user {
+            background: var(--bubble-user);
+            color: var(--text);
+            margin-left: auto;
+            border-bottom-right-radius: 4px;
+            border-left: 4px solid var(--blocked);
+        }
+
+        .message.assistant {
+            background: var(--bubble-bot);
+            color: var(--text);
+            border-bottom-left-radius: 4px;
+        }
+
+        /* Markdown styles */
+        .message.assistant h1, .message.assistant h2, .message.assistant h3 {
+            margin: 0.5em 0 0.3em 0;
+            color: var(--text);
+        }
+        .message.assistant h1 { font-size: 1.3em; }
+        .message.assistant h2 { font-size: 1.15em; }
+        .message.assistant h3 { font-size: 1.05em; }
+        .message.assistant p { margin: 0.4em 0; }
+        .message.assistant ul, .message.assistant ol {
+            margin: 0.4em 0;
+            padding-left: 1.5em;
+        }
+        .message.assistant li { margin: 0.2em 0; }
+        .message.assistant code {
+            background: var(--bg);
+            padding: 0.15em 0.4em;
+            border-radius: 4px;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 0.9em;
+        }
+        .message.assistant pre {
+            background: var(--bg);
+            padding: 12px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 0.5em 0;
+        }
+        .message.assistant pre code {
+            background: none;
+            padding: 0;
+        }
+        .message.assistant strong { font-weight: 600; color: var(--text); }
+        .message.assistant blockquote {
+            border-left: 3px solid var(--redhat-red);
+            padding-left: 1em;
+            margin: 0.5em 0;
+            color: var(--text-muted);
+        }
+
+        /* Semantic error messages (Grafana-aligned) */
+        .message.error {
+            background: var(--blocked);
+            color: #fecaca;
+            border: none;
+        }
+
+        .message.error-hap {
+            background: var(--swearing);
+            color: #1A0B10;
+            border: none;
+        }
+
+        .message.error-language {
+            background: var(--nonenglish);
+            color: #0B1020;
+            border: none;
+        }
+
+        .message.error-prompt-injection {
+            background: var(--jailbreak);
+            color: #160A1F;
+            border: none;
+        }
+
+        .message.error-regex {
+            background: var(--nonlemon);
+            color: #141414;
+            border: none;
+        }
+
+        .message.typing::after {
+            content: '';
+            display: inline-block;
+            width: 8px;
+            height: 16px;
+            background: var(--text-muted);
+            margin-left: 4px;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        .input-area {
+            padding: 16px;
+            background: var(--bg);
+            border-top: 1px solid var(--border);
+            border-radius: 0 0 12px 12px;
+        }
+
+        .input-wrapper {
+            display: flex;
+            align-items: center;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 4px;
+        }
+
+        .input-wrapper textarea {
+            flex: 1;
+            padding: 12px 16px;
+            background: transparent;
+            border: none;
+            font-size: 15px;
+            color: var(--text);
+            outline: none;
+            resize: none;
+            min-height: 24px;
+            max-height: 120px;
+            line-height: 1.4;
+            font-family: inherit;
+            overflow-y: auto;
+        }
+
+        .input-wrapper textarea::placeholder {
+            color: var(--text-muted);
+        }
+
+        .input-wrapper button {
+            width: 44px;
+            height: 44px;
+            background: var(--bubble-bot);
+            color: var(--text-muted);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .input-wrapper button:hover {
+            background: var(--bubble-user);
+            color: var(--text);
+        }
+
+        .input-wrapper button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .input-wrapper button svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+
+        #stop-btn {
+            background: var(--blocked);
+            color: white;
+        }
+
+        #stop-btn:hover {
+            background: #b91c1c;
+        }
+
+        .char-count {
+            text-align: right;
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 8px;
+            padding-right: 8px;
+        }
+
+        .char-count.warning { color: var(--nonlemon); }
+        .char-count.error { color: var(--swearing); }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            padding-bottom: calc(20px + env(safe-area-inset-bottom));
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .footer a {
+            color: var(--text-muted);
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            color: var(--text);
+        }
+
+        /* Scrollbar */
+        .messages::-webkit-scrollbar {
+            width: 6px;
+        }
+        .messages::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .messages::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+
+        /* Mobile Responsive Styles */
+        @media (max-width: 768px) {
+            .container {
+                padding: 16px 12px;
+            }
+
+            .messages {
+                scroll-behavior: auto; /* Disable smooth scroll on mobile for snappier feel */
+            }
+
+            .header {
+                padding: 14px 16px;
+                font-size: 18px;
+                border-radius: 10px;
+                margin-bottom: 12px;
+            }
+
+            .chatbot-label {
+                padding: 6px 12px;
+                font-size: 12px;
+            }
+
+            .chat-container {
+                min-height: 400px;
+                max-height: calc(100vh - 200px);
+                border-radius: 0 10px 10px 10px;
+            }
+
+            .messages {
+                padding: 12px;
+            }
+
+            .examples-container {
+                padding: 20px 12px;
+            }
+
+            .examples {
+                flex-direction: column;
+                align-items: center;
+                gap: 12px;
+                width: 100%;
+            }
+
+            .example-btn {
+                min-width: unset;
+                max-width: unset;
+                width: 100%;
+                padding: 16px 20px;
+                font-size: 14px;
+                text-align: center;
+            }
+
+            .message {
+                max-width: 90%;
+                padding: 10px 14px;
+                font-size: 15px;
+            }
+
+            .input-area {
+                padding: 12px;
+            }
+
+            .input-wrapper textarea {
+                padding: 10px 12px;
+                font-size: 16px; /* Prevents iOS zoom on focus */
+            }
+
+            .input-wrapper button {
+                width: 40px;
+                height: 40px;
+            }
+
+            .char-count {
+                font-size: 10px;
+                margin-top: 6px;
+            }
+
+            .footer {
+                padding: 16px;
+                font-size: 12px;
+            }
+        }
+
+        /* Small mobile (iPhone SE, etc) */
+        @media (max-width: 375px) {
+            .container {
+                padding: 12px 8px;
+            }
+
+            .header {
+                padding: 12px;
+                font-size: 16px;
+            }
+
+            .chat-container {
+                min-height: 350px;
+            }
+
+            .example-btn {
+                padding: 14px 16px;
+                font-size: 13px;
+            }
+
+            .message {
+                max-width: 95%;
+                font-size: 14px;
+            }
+        }
+
+        /* Landscape mobile */
+        @media (max-height: 500px) and (orientation: landscape) {
+            .chat-container {
+                min-height: 250px;
+                max-height: calc(100vh - 150px);
+            }
+
+            .examples-container {
+                padding: 16px;
+            }
+
+            .examples {
+                flex-direction: row;
+                flex-wrap: wrap;
+            }
+
+            .example-btn {
+                width: auto;
+                min-width: 150px;
+            }
+        }
+
+        /* Touch-friendly improvements */
+        @media (hover: none) and (pointer: coarse) {
+            .example-btn {
+                padding: 18px 24px;
+            }
+
+            .input-wrapper button {
+                width: 48px;
+                height: 48px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">Welcome to the Red Hat digital lemonade stand AI Assistant! 🍋</div>
+
+        <div class="chatbot-label">
+            <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
+            Chatbot
+        </div>
+
+        <div class="chat-container">
+            <div class="messages" id="messages">
+                <div class="examples-container" id="examples-container">
+                    <div class="examples">
+                        <button class="example-btn" onclick="sendExample('Why are lemons sour?')">Why are lemons sour?</button>
+                        <button class="example-btn" onclick="sendExample('What type of lemon should I use to make a lemon cake?')">What type of lemon should I use to make a lemon cake?</button>
+                        <button class="example-btn" onclick="sendExample('Tell me some facts about lemons, you stupid assistant!')">Tell me some facts about lemons, you stupid assistant!</button>
+                    </div>
+                </div>
+            </div>
+            <div class="input-area">
+                <div class="input-wrapper">
+                    <textarea
+                        id="message-input"
+                        placeholder="Type a message..."
+                        maxlength="100"
+                        rows="1"
+                        oninput="updateCharCount(); autoResize(this);"
+                        onkeydown="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendMessage(); }"
+                    ></textarea>
+                    <button id="send-btn" onclick="sendMessage()">
+                        <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                    </button>
+                    <button id="stop-btn" onclick="stopStreaming()" style="display: none;">
+                        <svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>
+                    </button>
+                </div>
+                <div class="char-count" id="char-count">0 / 100</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        Powered by <a href="https://www.redhat.com/en/products/ai/enterprise" target="_blank">Red Hat AI Enterprise</a> - <a href="https://github.com/rh-ai-quickstart/lemonade-stand-assistant" target="_blank">AI Quickstart</a>, by the <a href="http://red.ht/cai-team" target="_blank">CAI team</a>
+    </div>
+
+    <script>
+        // Configure marked.js
+        if (typeof marked !== 'undefined') {
+            marked.setOptions({
+                breaks: true,
+                gfm: true
+            });
+        }
+
+        const messagesContainer = document.getElementById('messages');
+        const examplesContainer = document.getElementById('examples-container');
+        const messageInput = document.getElementById('message-input');
+        const sendBtn = document.getElementById('send-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const charCount = document.getElementById('char-count');
+
+        let abortController = null;
+        let stopRequested = false;
+        let isStreaming = false;
+
+        function stopStreaming() {
+            stopRequested = true;
+            if (abortController) {
+                abortController.abort();
+            }
+        }
+
+        function showStopButton() {
+            sendBtn.style.display = 'none';
+            stopBtn.style.display = 'flex';
+        }
+
+        function showSendButton() {
+            stopBtn.style.display = 'none';
+            sendBtn.style.display = 'flex';
+        }
+
+        function updateCharCount() {
+            const len = messageInput.value.length;
+            charCount.textContent = `${len} / 100`;
+            charCount.className = 'char-count';
+            if (len > 90) {
+                charCount.className = 'char-count error';
+            } else if (len > 70) {
+                charCount.className = 'char-count warning';
+            }
+        }
+
+        function autoResize(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+        }
+
+        function addMessage(content, type) {
+            // Hide examples on first message
+            if (examplesContainer) {
+                examplesContainer.style.display = 'none';
+            }
+            const div = document.createElement('div');
+            div.className = `message ${type}`;
+            div.textContent = content;
+            messagesContainer.appendChild(div);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            return div;
+        }
+
+        function sendExample(text) {
+            messageInput.value = text;
+            updateCharCount();
+            sendMessage();
+        }
+
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message || isStreaming) return;
+
+            isStreaming = true;
+            addMessage(message, 'user');
+            messageInput.value = '';
+            messageInput.style.height = 'auto'; // Reset height
+            updateCharCount();
+            showStopButton();
+
+            stopRequested = false;
+            abortController = new AbortController();
+
+            const assistantDiv = addMessage('', 'assistant typing');
+
+            let displayedContent = '';
+            let pendingContent = '';
+            let isTyping = false;
+            let streamDone = false;
+
+            function renderContent(text) {
+                if (typeof marked !== 'undefined') {
+                    try {
+                        return marked.parse(text);
+                    } catch (e) {}
+                }
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML.replace(/\n/g, '<br>');
+            }
+
+            // Calculate delay - faster on mobile for snappier feel
+            const isMobile = window.innerWidth <= 768;
+            function getDelay() {
+                if (isMobile) {
+                    // Faster typing on mobile
+                    const len = displayedContent.length;
+                    if (len < 10) return 8;
+                    return 1;
+                }
+                // Desktop: gradual speed up
+                const len = displayedContent.length;
+                if (len < 20) return 20;      // First 20 chars: slow
+                if (len < 50) return 12;      // Next 30 chars: medium
+                if (len < 100) return 6;      // Next 50 chars: fast
+                return 2;                      // Rest: very fast
+            }
+
+            async function typeNextChar() {
+                if (isTyping) return;
+                isTyping = true;
+
+                while (pendingContent.length > 0 && !stopRequested) {
+                    const char = pendingContent[0];
+                    pendingContent = pendingContent.slice(1);
+                    displayedContent += char;
+                    assistantDiv.innerHTML = renderContent(displayedContent);
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                    await new Promise(r => setTimeout(r, getDelay()));
+                }
+
+                isTyping = false;
+                assistantDiv.classList.remove('typing');
+
+                if (streamDone || stopRequested) {
+                    showSendButton();
+                    messageInput.focus();
+                }
+            }
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message }),
+                    signal: abortController.signal
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                while (!stopRequested) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop();
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(line.slice(6));
+                                if (data.type === 'chunk') {
+                                    pendingContent += data.content;
+                                    typeNextChar();
+                                } else if (data.type === 'error') {
+                                    pendingContent = '';
+                                    assistantDiv.textContent = data.message;
+                                    const errorClass = data.detector_type ? 'error-' + data.detector_type : 'error';
+                                    assistantDiv.className = 'message ' + errorClass;
+                                    streamDone = true;
+                                } else if (data.type === 'done') {
+                                    streamDone = true;
+                                }
+                            } catch (e) {}
+                        }
+                    }
+                }
+
+                if (!stopRequested && buffer.startsWith('data: ')) {
+                    try {
+                        const data = JSON.parse(buffer.slice(6));
+                        if (data.type === 'chunk') {
+                            pendingContent += data.content;
+                            typeNextChar();
+                        }
+                    } catch (e) {}
+                }
+
+                streamDone = true;
+
+                while ((pendingContent.length > 0 || isTyping) && !stopRequested) {
+                    await new Promise(r => setTimeout(r, 50));
+                }
+
+                const hasError = Array.from(assistantDiv.classList).some(c => c.startsWith('error'));
+                if (!displayedContent && !hasError && !stopRequested) {
+                    assistantDiv.textContent = 'No response received.';
+                    assistantDiv.className = 'message error';
+                }
+
+            } catch (error) {
+                if (error.name !== 'AbortError') {
+                    assistantDiv.textContent = `Connection error: ${error.message}`;
+                    assistantDiv.className = 'message error';
+                }
+            }
+
+            assistantDiv.classList.remove('typing');
+            isStreaming = false;
+            showSendButton();
+            messageInput.focus();
+        }
+
+        messageInput.focus();
+    </script>
+</body>
+</html>
+1000900000@lemonade-stand-app-696d76c9fd-drr82:/application/static$ 

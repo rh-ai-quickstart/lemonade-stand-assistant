@@ -1,0 +1,25 @@
+---
+# Detector configuration
+# Configure GPU usage and resources for each detector
+detectors:
+  # IBM HAP Detector (Granite Guardian)
+  hap:
+    useGpu: false
+    resources:
+      requests:
+        cpu: '1'
+        memory: 4Gi
+      limits:
+        cpu: '2'
+        memory: 8Gi
+
+  # Prompt Injection Detector (DeBERTa v3)
+  promptInjection:
+    useGpu: false
+    resources:
+      requests:
+        cpu: '4'
+        memory: 16Gi
+      limits:
+        cpu: '8'
+        memory: 24Gi

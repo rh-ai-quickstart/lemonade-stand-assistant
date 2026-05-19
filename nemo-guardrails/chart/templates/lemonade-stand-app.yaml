@@ -1,0 +1,85 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lemonade-stand-app
+  labels:
+    app: lemonade-stand-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lemonade-stand-app
+  template:
+    metadata:
+      labels:
+        app: lemonade-stand-app
+    spec:
+      containers:
+        - name: lemonade-stand-app
+          image: quay.io/ckavili/lemon-nemo:0.0.1
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+          env:
+            - name: NEMO_GUARDRAILS_HOST
+              value: "lemonade-guardrails-service"
+            - name: NEMO_GUARDRAILS_PORT
+              value: "8000"
+            - name: NEMO_GUARDRAILS_SCHEME
+              value: "http"
+            - name: NEMO_MODEL
+              value: "granite-3-2-8b-instruct"
+            - name: LOG_LEVEL
+              value: "INFO"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      securityContext:
+        runAsNonRoot: true
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lemonade-stand-app
+  labels:
+    app: lemonade-stand-app
+spec:
+  selector:
+    app: lemonade-stand-app
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: lemonade-stand-app
+  labels:
+    app: lemonade-stand-app
+spec:
+  to:
+    kind: Service
+    name: lemonade-stand-app
+  port:
+    targetPort: 8080
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
