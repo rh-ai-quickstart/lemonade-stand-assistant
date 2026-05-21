@@ -17,17 +17,15 @@ data:
       - type: main
         engine: openai
         parameters:
-          base_url: "${LLM_API_BASE}"
-          model_name: "${LLM_MODEL_NAME}"
-          api_key: "${LLM_API_KEY}"
+          base_url: "${LLM_API_BASE}" # change with your own URL if not using OpenAI
+          model_name: "${LLM_MODEL_NAME}" #change with your own model name 
 
       # LLM as judge for subtle topic relevance (e.g. "date" = fruit vs calendar vs romantic)
       - type: self_check_input
         engine: openai
         parameters:
-          base_url: "${LLM_API_BASE}"
-          model_name: "${LLM_MODEL_NAME}"
-          api_key: "${LLM_API_KEY}"
+          base_url: "${LLM_API_BASE}" # change with your own URL if not using OpenAI
+          model_name: "${LLM_MODEL_NAME}" #change with your own model name 
 
     instructions:
       - type: general

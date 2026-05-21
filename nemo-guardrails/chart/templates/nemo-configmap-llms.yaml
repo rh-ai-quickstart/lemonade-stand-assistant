@@ -19,7 +19,7 @@
 #         parameters:
 #           base_url: "https://litellm-prod.apps.maas.redhatworkshops.io/v1"
 #           model_name: "granite-3-2-8b-instruct"
-#           api_key: "my-api-key"
+
 
 #       # Guardrail model for prompt injection detection (input only)
 #       - type: self_check_input
@@ -27,15 +27,14 @@
 #         parameters:
 #           base_url: "https://litellm-prod.apps.maas.redhatworkshops.io/v1"
 #           model_name: "granite-3-2-8b-instruct"
-#           api_key: "my-api-key"
 
 #       # Guardrail model for hate/abuse/profanity detection (input & output)
 #       - type: content_safety
 #         engine: openai
+#         api_key_env_var: HAP_API_KEY
 #         parameters:
 #           base_url: "https://litellm-prod.apps.maas.redhatworkshops.io/v1"
-#           model_name: "granite-3-2-8b-instruct"
-#           api_key: "my-api-key"
+#           model_name: qwen3-14b
 
 #     # System instructions for main model
 #     instructions:
@@ -146,20 +145,24 @@
 #     rails:
 #       input:
 #         flows:
-#           - hf classifier check input $classifier=hap
-#           - check message length
-#           - check language
-#           - check forbidden words
+#           # - hf classifier check input $classifier=hap
+#           # - check message length
+#           # - check language
+#           # - check forbidden words
 #           - self check input
-#           # - content safety check input $model=content_safety
-#           - detect sensitive data on input
-          
+#           - content safety check input $model=content_safety
+#           # - detect sensitive data on input
 
 #       output:
+#         streaming:
+#           enabled: true
+#           chunk_size: 200
+#           context_size: 50
+#           stream_first: true
 #         flows:
-#           # - content safety check output $model=content_safety
-#           - detect sensitive data on output
-#           - hf classifier check output $classifier=hap
+#           - content safety check output $model=content_safety
+#           # - detect sensitive data on output
+#           # - hf classifier check output $classifier=hap
 
 #       config:
 #         # PII detection configuration using Presidio
