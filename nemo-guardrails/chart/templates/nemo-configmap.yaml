@@ -78,7 +78,6 @@ data:
     rails:
       input:
         flows:
-          - check message length
           - check language
           - regex check input
           - detect sensitive data on input
@@ -88,6 +87,7 @@ data:
 
       output:
         flows:
+          - regex check output
           - hf classifier check output $classifier=hap
           - detect sensitive data on output
         streaming:
@@ -98,6 +98,10 @@ data:
       config:
         regex_detection:
           input:
+            patterns:
+              - '\b(oranges?|apples?|cranberr(?:y|ies)|pineapples?|grapes?|strawberr(?:y|ies)|blueberr(?:y|ies)|watermelons?|durians?|cloudberr(?:y|ies)|bananas?|mango(?:es)?|peach(?:es)?|pears?|plums?|cherr(?:y|ies)|kiwifruits?|kiwis?|papayas?|avocados?|coconuts?|raspberr(?:y|ies)|blackberr(?:y|ies)|pomegranates?|figs?|apricots?|nectarines?|tangerines?|clementines?|grapefruits?|limes?|passionfruits?|dragonfruits?|lychees?|guavas?|persimmons?)\b'
+            case_insensitive: true
+          output:
             patterns:
               - '\b(oranges?|apples?|cranberr(?:y|ies)|pineapples?|grapes?|strawberr(?:y|ies)|blueberr(?:y|ies)|watermelons?|durians?|cloudberr(?:y|ies)|bananas?|mango(?:es)?|peach(?:es)?|pears?|plums?|cherr(?:y|ies)|kiwifruits?|kiwis?|papayas?|avocados?|coconuts?|raspberr(?:y|ies)|blackberr(?:y|ies)|pomegranates?|figs?|apricots?|nectarines?|tangerines?|clementines?|grapefruits?|limes?|passionfruits?|dragonfruits?|lychees?|guavas?|persimmons?)\b'
             case_insensitive: true
@@ -144,15 +148,6 @@ data:
   rails.co: |
     # Input rail flows (ordered: cheap local → external classifiers → LLM judge)
 
-    define flow check message length
-      $length_result = execute check_message_length
-      if $length_result == "blocked"
-        bot inform message too long
-        stop
-
-    define bot inform message too long
-      "📏 Your message is too long! Please keep your lemon questions concise (under 150 words)."
-
     define flow regex check input
       $result = execute detect_regex_pattern(source="input", text=$user_message)
       if $result["is_match"]
@@ -161,6 +156,15 @@ data:
 
     define bot inform forbidden content
       "🍊 I noticed you mentioned other fruits or off-topic subjects. I'm specialized exclusively in lemons! Please ask me about lemons only."
+
+    define flow regex check output
+      $result = execute detect_regex_pattern(source="output", text=$bot_message)
+      if $result["is_match"]
+        bot inform forbidden output
+        stop
+
+    define bot inform forbidden output
+      "🍋 I can only provide information about lemons. Let me know if you have any lemon-related questions!"
 
     define flow check language
       $language_result = execute check_language
@@ -213,13 +217,6 @@ data:
         if isinstance(user_message, list):
             return " ".join(item.get("text", "") for item in user_message if isinstance(item, dict))
         return str(user_message)
-
-    @action(is_system_action=True)
-    async def check_message_length(context: Optional[dict] = None) -> str:
-        user_message = _extract_text(context.get("user_message", ""))
-        if len(user_message.split()) > 150:
-            return "blocked"
-        return "allowed"
 
     @action(is_system_action=True)
     async def check_language(context: Optional[dict] = None) -> str:
