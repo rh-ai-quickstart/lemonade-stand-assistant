@@ -2,7 +2,7 @@
 
 Deploy an AI-powered customer service assistant with built-in safety guardrails to ensure family-friendly, compliant interactions for your business.
 
-Built by Anneli Sara Banderby and Cansu Cavili-Örnek. 
+Built by Anneli Sara Banderby and Cansu Kavili-Örnek. 
 
 ## Table of Contents
 
@@ -62,33 +62,29 @@ The guardrails orchestrator coordinates these detectors to evaluate inputs and o
 **[▶️ View Interactive Demo](https://interact.redhat.com/share/ccMmWuFhRNPc9ppjTAz4)**
 
 
-### Monitoring Dashboards
+### Monitoring Dashboard
 
-> **Note**: Deploying monitoring dashboards requires cluster admin privileges, whether deploying the Grafana Operator or using the built-in OpenShift dashboard.
+The solution includes an R Shiny monitoring dashboard for visualizing guardrail detections in real-time, including detections by detector type, total requests, input/output blocks, and approved requests.
 
-The solution includes monitoring dashboards for visualizing guardrail detections in real-time, including detections by detector type, total requests, input/output blocks, and approved requests.
+**R Shiny Dashboard**
 
-![Grafana Dashboard](./docs/images/grafana-dashboard.png)
+![shiny-dashboard.png](./docs/images/shiny-dashboard.png)
 
-There are two options for deploying the dashboard:
+The Shiny dashboard is deployed automatically with the lemonade-stand-assistant by default.
 
-**Option 1: Grafana Dashboard**
+The dashboard automatically fetches metrics from the lemonade-stand app every second and displays:
+- Total requests counter
+- Input blocked counter
+- Output blocked counter  
+- Approved requests counter
+- Detection breakdown by guardrail type (with progress bars)
 
-Deploy a full Grafana instance with pre-configured dashboards. See the [grafana](./grafana) folder for installation instructions.
+To access the dashboard after deployment:
 
-**Option 2: Built-in OpenShift Dashboard**
-
-Deploy a dashboard to the built-in OpenShift dashboard viewer. This can be enabled in the Helm chart by setting `metrics.dashboard.enabled` to true. If you want to see the dashboard in developer views, enable the `odc` label setting as well in the `values.yaml`.
-
-```yaml
-# Enable openshift dashboard
-metrics:
-  dashboard:
-    enabled: true # requires cluster-admin privileges to install the dashboard
-    odc: false
+```bash
+# Get the dashboard URL
+echo https://$(oc get route shiny-dashboard -n lemonade-stand-assistant --template='{{.spec.host}}')
 ```
-
-Once deployed the OpenShift dashboard can be found in OpenShift > Observe > Lemonade Stand Guardrail Metrics.
 
 ## Requirements
 

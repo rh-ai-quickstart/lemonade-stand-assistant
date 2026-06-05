@@ -1,0 +1,6 @@
+apiVersion: v2
+name: shiny-dashboard
+description: R Shiny dashboard for Lemonade Stand guardrails metrics
+type: application
+version: 1.0.0
+appVersion: "1.0.0"

@@ -1,0 +1,94 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shiny-dashboard
+  labels:
+    app: shiny-dashboard
+    app.kubernetes.io/name: shiny-dashboard
+    app.kubernetes.io/component: dashboard
+spec:
+  replicas: {{ .Values.shinyDashboard.replicas }}
+  selector:
+    matchLabels:
+      app: shiny-dashboard
+  template:
+    metadata:
+      labels:
+        app: shiny-dashboard
+        app.kubernetes.io/name: shiny-dashboard
+    spec:
+      containers:
+      - name: shiny
+        image: "{{ .Values.shinyDashboard.image.repository }}:{{ .Values.shinyDashboard.image.tag }}"
+        imagePullPolicy: {{ .Values.shinyDashboard.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.shinyDashboard.service.targetPort }}
+          name: http
+          protocol: TCP
+        env:
+        - name: METRICS_URL
+          value: {{ .Values.shinyDashboard.metrics.url | quote }}
+        - name: REFRESH_INTERVAL
+          value: {{ .Values.shinyDashboard.metrics.refreshInterval | quote }}
+        resources:
+          {{- toYaml .Values.shinyDashboard.resources | nindent 10 }}
+        livenessProbe:
+          httpGet:
+            path: /
+            port: {{ .Values.shinyDashboard.service.targetPort }}
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /
+            port: {{ .Values.shinyDashboard.service.targetPort }}
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: shiny-dashboard
+  labels:
+    app: shiny-dashboard
+    app.kubernetes.io/name: shiny-dashboard
+    app.kubernetes.io/component: dashboard
+spec:
+  selector:
+    app: shiny-dashboard
+  ports:
+  - port: {{ .Values.shinyDashboard.service.port }}
+    targetPort: {{ .Values.shinyDashboard.service.targetPort }}
+    protocol: TCP
+    name: http
+  type: ClusterIP
+---
+{{- if .Values.shinyDashboard.route.enabled }}
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: shiny-dashboard
+  labels:
+    app: shiny-dashboard
+    app.kubernetes.io/name: shiny-dashboard
+    app.kubernetes.io/component: dashboard
+spec:
+  {{- if .Values.shinyDashboard.route.host }}
+  host: {{ .Values.shinyDashboard.route.host }}
+  {{- end }}
+  to:
+    kind: Service
+    name: shiny-dashboard
+    weight: 100
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  wildcardPolicy: None
+{{- end }}

@@ -1,0 +1,77 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shiny-dashboard
+  labels:
+    app: shiny-dashboard
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: shiny-dashboard
+  template:
+    metadata:
+      labels:
+        app: shiny-dashboard
+    spec:
+      containers:
+      - name: shiny
+        image: quay.io/YOUR_ORG/shiny-dashboard:latest
+        ports:
+        - containerPort: 3838
+          name: http
+        env:
+        - name: METRICS_URL
+          value: "http://lemonade-stand-app:8080/metrics"
+        - name: REFRESH_INTERVAL
+          value: "5"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 3838
+          initialDelaySeconds: 10
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 3838
+          initialDelaySeconds: 5
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: shiny-dashboard
+  labels:
+    app: shiny-dashboard
+spec:
+  ports:
+  - port: 3838
+    targetPort: 3838
+    name: http
+  selector:
+    app: shiny-dashboard
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: shiny-dashboard
+  labels:
+    app: shiny-dashboard
+spec:
+  to:
+    kind: Service
+    name: shiny-dashboard
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect

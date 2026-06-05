@@ -36,3 +36,27 @@ metrics:
   dashboard:
     enabled: false # requires cluster-admin privileges to install the dashboard
     odc: false
+
+# Shiny Dashboard configuration
+shinyDashboard:
+  image:
+    repository: quay.io/sara_banderby/shinydashboard
+    tag: fedora
+    pullPolicy: Always
+  replicas: 1
+  service:
+    port: 3838
+    targetPort: 3838
+  route:
+    enabled: true
+    host: ""  # Leave empty for auto-generated hostname
+  metrics:
+    url: "http://lemonade-stand:8080/metrics"
+    refreshInterval: 1
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"

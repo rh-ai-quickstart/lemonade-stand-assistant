@@ -1,0 +1,35 @@
+FROM fedora:latest
+
+# Install R and dependencies
+RUN dnf install -y \
+    R \
+    R-devel \
+    libcurl-devel \
+    openssl-devel \
+    libxml2-devel \
+    libuv-devel \
+    && dnf clean all
+
+# Install R packages
+RUN R -e "install.packages(c('shiny', 'httpuv', 'httr', 'stringr', 'bslib'), repos='https://cloud.r-project.org/')"
+
+# Create shiny user and app directory
+RUN useradd -r -u 1001 shiny && \
+    mkdir -p /srv/shiny-server && \
+    chown -R 1001:0 /srv/shiny-server && \
+    chmod -R g=u /srv/shiny-server
+
+# Copy the app
+COPY app.r /srv/shiny-server/app.R
+
+# Fix permissions
+RUN chown -R 1001:0 /srv/shiny-server
+
+# Expose port
+EXPOSE 3838
+
+# Run as non-root user
+USER 1001
+
+# Start Shiny app directly
+CMD ["R", "-e", "shiny::runApp('/srv/shiny-server/app.R', host='0.0.0.0', port=3838)"]
