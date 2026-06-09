@@ -1,6 +1,6 @@
-# Add Guardrails to the Lemonade Stand Assistant
+# Guardrail the Lemonade Stand Assistant
 
-Deploy an AI-powered customer service assistant with built-in safety guardrails to ensure family-friendly, compliant interactions for your business.
+Deploy an AI-powered customer service assistant with built-in safety guardrails to ensure family-friendly, compliant interactions for your business. With a dashboard for metrics and a chat UI, abuse the system and see how it responds! 
 
 Built by Anneli Sara Banderby and Cansu Kavili-Örnek. 
 
