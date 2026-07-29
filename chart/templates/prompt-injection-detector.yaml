@@ -77,9 +77,7 @@ spec:
       storage:
         key: minio-data-connection-detector-models
         path: deberta-v3-base-prompt-injection-v2
-    {{- if .Values.detectors.promptInjection.useGpu }}
+    {{- if and .Values.detectors.promptInjection.useGpu .Values.gpuTolerations }}
     tolerations:
-      - effect: NoSchedule
-        key: nvidia.com/gpu
-        operator: Exists
+      {{- toYaml .Values.gpuTolerations | nindent 6 }}
     {{- end }}

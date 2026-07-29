@@ -6,6 +6,13 @@ model: {}
   # port: 443
   # api_key: my-api-key
 
+# GPU tolerations applied to all GPU-requiring pods (LLM, detectors with useGpu: true)
+# Override with cluster-specific taint keys if your GPU nodes use non-standard taints
+gpuTolerations:
+  - effect: NoSchedule
+    key: nvidia.com/gpu
+    operator: Exists
+
 # Detector configuration
 # Configure GPU usage and resources for each detector
 detectors:

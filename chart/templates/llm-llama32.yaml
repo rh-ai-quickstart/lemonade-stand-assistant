@@ -85,8 +85,8 @@ spec:
           nvidia.com/gpu: '1'
       runtime: llama-32
       storageUri: 'oci://quay.io/redhat-ai-services/modelcar-catalog:llama-3.2-3b-instruct'
+    {{- with .Values.gpuTolerations }}
     tolerations:
-      - effect: NoSchedule
-        key: nvidia.com/gpu
-        operator: Exists
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
 {{- end }}

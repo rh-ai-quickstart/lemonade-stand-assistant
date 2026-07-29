@@ -75,9 +75,7 @@ spec:
       storage:
         key: minio-data-connection-detector-models
         path: granite-guardian-hap-125m
-    {{- if .Values.detectors.hap.useGpu }}
+    {{- if and .Values.detectors.hap.useGpu .Values.gpuTolerations }}
     tolerations:
-      - effect: NoSchedule
-        key: nvidia.com/gpu
-        operator: Exists
+      {{- toYaml .Values.gpuTolerations | nindent 6 }}
     {{- end }}
