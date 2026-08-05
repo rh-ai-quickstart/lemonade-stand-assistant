@@ -1,0 +1,86 @@
+name: lemonade-stand-assistant
+displayName: Lemonade Stand Assistant
+description: >-
+  AI-powered customer service assistant with built-in safety guardrails
+  (HAP detection, prompt injection, language filtering) to ensure
+  family-friendly, compliant interactions for your business.
+version: "1.0.0"
+image: https://raw.githubusercontent.com/rh-ai-quickstart/lemonade-stand-assistant/main/docs/images/architecture.png
+
+maintainer:
+  name: Sara Banderby & Cansu Kavili
+  github: rh-ai-quickstart
+
+repository: https://github.com/rh-ai-quickstart/lemonade-stand-assistant
+
+deployment:
+  scope: project
+  chart:
+    type: repo
+    path: chart/
+    branch: main
+
+  configurableValues:
+    - key: model.name
+      label: External model name
+      description: Name of an external model to use instead of the built-in LLaMA 3.2.
+      type: string
+      required: false
+    - key: model.endpoint
+      label: Model endpoint
+      description: MaaS endpoint URL (leave empty to deploy the built-in model).
+      type: string
+      required: false
+    - key: model.port
+      label: Model endpoint port
+      type: number
+      default: 443
+      required: false
+    - key: detectors.hap.useGpu
+      label: HAP detector GPU
+      description: Enable GPU for the toxicity detector (requires GPU node).
+      type: boolean
+      default: false
+    - key: detectors.promptInjection.useGpu
+      label: Prompt injection detector GPU
+      description: Enable GPU for the prompt injection detector (requires GPU node).
+      type: boolean
+      default: false
+    - key: metrics.dashboard.enabled
+      label: Enable metrics dashboard
+      description: Install OpenShift monitoring dashboard (requires cluster-admin).
+      type: boolean
+      default: false
+    - key: shinyDashboard.replicas
+      label: Dashboard replicas
+      description: Number of Shiny dashboard replicas.
+      type: number
+      default: 1
+
+rbac:
+  requiredPermissions:
+    - apiGroup: ""
+      resource: pods
+      verbs: [get, list]
+    - apiGroup: apps
+      resource: deployments
+      verbs: [get, list, create, delete]
+    - apiGroup: ""
+      resource: services
+      verbs: [get, list, create, delete]
+    - apiGroup: ""
+      resource: configmaps
+      verbs: [get, list, create, delete]
+    - apiGroup: ""
+      resource: secrets
+      verbs: [get, list, create, delete]
+    - apiGroup: route.openshift.io
+      resource: routes
+      verbs: [get, list, create, delete]
+
+prerequisites:
+  - "CPU: minimum 7 vCPU request / 16 vCPU limit"
+  - "Memory: minimum 30 GiB request / 51 GiB limit"
+  - "GPU: 1 NVIDIA GPU (A10, A100, L40S, or T4) when deploying the default Llama 3.2 model — not required if bringing your own model endpoint"
+  - Red Hat OpenShift Container Platform with OpenShift AI
+  - Detectors run on CPU by default; GPU acceleration optional for improved performance
