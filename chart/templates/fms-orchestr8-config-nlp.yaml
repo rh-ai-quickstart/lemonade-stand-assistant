@@ -16,7 +16,7 @@ data:
     openai: 
       service:
         hostname: {{ .Values.model.endpoint | default "llama-32-predictor" }}
-        port: {{ .Values.model.port | default "8080" }}
+        port: {{ .Values.model.port | default "80" }}
     detectors:
       regex_competitor:
         type: text_contents
@@ -29,14 +29,14 @@ data:
         type: text_contents
         service:
           hostname: guardrails-detector-ibm-hap-predictor
-          port: 8000
+          port: 80
         chunker_id: sentence
         default_threshold: 0.5
       prompt_injection:
         type: text_contents
         service:
           hostname: prompt-injection-detector-predictor
-          port: 8000
+          port: 80
         chunker_id: sentence
         default_threshold: 0.5
       language_detection:

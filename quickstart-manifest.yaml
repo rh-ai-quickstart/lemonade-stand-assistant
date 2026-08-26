@@ -1,0 +1,349 @@
+# yaml-language-server: $schema=quickstart-manifest.schema.json
+
+apiVersion: quickstart.redhat.com/v1
+kind: Quickstart
+
+metadata:
+  name: lemonade-stand-assistant
+  displayName: "Lemonade Stand Assistant"
+  shortDescription: "Deploy an AI-powered customer service assistant with built-in safety guardrails to ensure family-friendly, compliant interactions for your business."
+  longDescription: |
+    Imagine we run a successful lemonade stand and want to deploy a customer service agent so our
+    customers can learn more about our products. We'll want to make sure all conversations with the
+    agent are family friendly, and that it does not promote our rival fruit juice vendors.
+
+    This demo showcases how to deploy an AI-powered customer service assistant with multiple guardrails
+    to ensure safe, compliant, and on-brand interactions. The solution uses Llama 3.2 as the default
+    language model (or your own model endpoint), protected by three detector models that monitor for
+    harmful content, prompt injection attacks, and language compliance.
+  version: "1.0.0"
+  repository: "https://github.com/rh-ai-quickstart/lemonade-stand-assistant"
+  maintainer:
+    name: "Red Hat AI Quickstart Team"
+  license: "MIT"
+  lastUpdated: "2026-07-28T00:00:00Z"
+
+classification:
+  industries:
+    - "Retail"
+  useCases:
+    - "AI Safety"
+    - "Content Moderation"
+  aiCapabilities:
+    - "OpenShift AI"
+    - "TrustyAI"
+  technologies:
+    - name: "Helm"
+      role: "Deployment and packaging"
+    - name: "FastAPI"
+      role: "Chat application backend"
+    - name: "KServe"
+      role: "Model serving infrastructure"
+    - name: "vLLM"
+      role: "LLM inference runtime"
+    - name: "MinIO"
+      role: "Object storage for detector models"
+    - name: "R Shiny"
+      role: "Real-time monitoring dashboard"
+    - name: "Python"
+      role: "Application programming language"
+    - name: "IBM HAP Detector (Granite Guardian HAP 125M)"
+      role: "Harmful content detection"
+      partner: "IBM"
+    - name: "DeBERTa v3 Base Prompt Injection Detector"
+      role: "Prompt injection attack detection"
+      partner: "Protect AI"
+    - name: "Lingua Language Detector"
+      role: "Language identification"
+  tags:
+    - "ai-safety"
+    - "guardrails"
+    - "trustyai"
+    - "openshift-ai"
+    - "kserve"
+    - "llm"
+    - "retail"
+    - "customer-service"
+  estimatedDeploymentTime: 20
+
+prerequisites:
+  openshift:
+    minimumVersion: "4.21.16"
+    tested:
+      - "4.21.16"
+  operators:
+    - name: "Red Hat OpenShift AI"
+      namespace: "cluster"
+      required: true
+      autoInstalled: false
+      installationHint: "Must be installed cluster-wide before deploying. Provides KServe ServingRuntime and InferenceService CRDs."
+    - name: "TrustyAI"
+      namespace: "cluster"
+      required: true
+      autoInstalled: false
+      installationHint: "Must be enabled within Red Hat OpenShift AI. Provides the GuardrailsOrchestrator CRD."
+    - name: "Prometheus / Cluster Monitoring"
+      namespace: "cluster"
+      required: false
+      autoInstalled: false
+      installationHint: "Optional. Provides ServiceMonitor CRD for metrics collection in OpenShift console. The quickstart works without it."
+  resources:
+    minimum:
+      cpu: "9"
+      memory: "33Gi"
+      storage: "50Gi"
+      gpu:
+        count: 1
+    recommended:
+      cpu: "21"
+      memory: "60Gi"
+      storage: "50Gi"
+      gpu:
+        count: 1
+  storageClasses:
+    - name: "any-rwo"
+      accessModes:
+        - "ReadWriteOnce"
+      minimumSize: "50Gi"
+      usage: "MinIO object storage for detector model weights"
+  externalServices:
+    - name: "Huggingface"
+      required: true
+      purpose: "Download detector models (ibm-granite/granite-guardian-hap-125m, protectai/deberta-v3-base-prompt-injection-v2) at deploy time"
+      configurationHint: "Cluster must have outbound internet access to huggingface.co during installation"
+    - name: "Quay.io"
+      required: true
+      purpose: "Pull all container images including the Llama 3.2 model as an OCI artifact"
+      configurationHint: "Cluster must have outbound internet access to quay.io"
+    - name: "External LLM Endpoint"
+      required: false
+      purpose: "OpenAI-compatible API endpoint for BYO model mode (avoids GPU requirement)"
+      configurationHint: "Provide model name, endpoint hostname, port, and API key via Helm values"
+
+deployment:
+  supportedActions:
+    - "CHECK_PRE_REQS"
+    - "STATUS"
+    - "INSTALL"
+    - "UNINSTALL_DELETE_ALL"
+    - "UNINSTALL_KEEP_DATA"
+  supportedModes:
+    - "DEMO"
+  installer:
+    image: "quay.io/rh-ai-quickstart/lemonade-stand-assistant-installer:1.0.0"
+    command: ["/installer/entrypoint.sh"]
+    requiredEnv:
+      - "TARGET_NAMESPACE"
+      - "ACTION"
+      - "INSTALL_MODE"
+    rbac:
+      serviceAccount:
+        name: "lemonade-stand-assistant-installer"
+        namespace: "default"
+      defaultNamespaceRole:
+        name: "lemonade-stand-assistant-installer"
+        namespace: "default"
+        rules:
+          - apiGroups: [""]
+            resources: ["pods", "configmaps"]
+            verbs: ["get", "list", "watch"]
+          - apiGroups: ["batch"]
+            resources: ["jobs"]
+            verbs: ["get", "list", "watch"]
+      defaultNamespaceRoleBinding:
+        name: "lemonade-stand-assistant-installer"
+        namespace: "default"
+        roleRef:
+          kind: "Role"
+          name: "lemonade-stand-assistant-installer"
+        subjects:
+          - kind: "ServiceAccount"
+            name: "lemonade-stand-assistant-installer"
+            namespace: "default"
+      clusterRole:
+        name: "lemonade-stand-assistant-installer-${TARGET_NAMESPACE}"
+        rules:
+          # Cluster-scoped read permissions
+          - apiGroups: [""]
+            resources: ["nodes"]
+            verbs: ["get", "list"]
+          - apiGroups: ["storage.k8s.io"]
+            resources: ["storageclasses"]
+            verbs: ["get", "list"]
+          - apiGroups: ["config.openshift.io"]
+            resources: ["clusterversions"]
+            verbs: ["get", "list"]
+          - apiGroups: ["apiextensions.k8s.io"]
+            resources: ["customresourcedefinitions"]
+            verbs: ["get", "list"]
+          - apiGroups: ["packages.operators.coreos.com"]
+            resources: ["packagemanifests"]
+            verbs: ["get", "list"]
+          # Namespace management
+          - apiGroups: [""]
+            resources: ["namespaces"]
+            verbs: ["get", "list", "create", "delete"]
+          # Core resources
+          - apiGroups: [""]
+            resources: ["pods", "services", "secrets", "configmaps", "persistentvolumeclaims", "serviceaccounts"]
+            verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+          # Workloads
+          - apiGroups: ["apps"]
+            resources: ["deployments", "replicasets", "statefulsets"]
+            verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+          # Jobs
+          - apiGroups: ["batch"]
+            resources: ["jobs"]
+            verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+          # Routes
+          - apiGroups: ["route.openshift.io"]
+            resources: ["routes"]
+            verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+          # RBAC
+          - apiGroups: ["rbac.authorization.k8s.io"]
+            resources: ["roles", "rolebindings"]
+            verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+          # Monitoring
+          - apiGroups: ["monitoring.coreos.com"]
+            resources: ["servicemonitors"]
+            verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+          # KServe
+          - apiGroups: ["serving.kserve.io"]
+            resources: ["servingruntimes", "inferenceservices"]
+            verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+          # TrustyAI
+          - apiGroups: ["trustyai.opendatahub.io"]
+            resources: ["guardrailsorchestrators"]
+            verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+      clusterRoleBinding:
+        name: "lemonade-stand-assistant-installer-${TARGET_NAMESPACE}"
+        roleRef:
+          kind: "ClusterRole"
+          name: "lemonade-stand-assistant-installer-${TARGET_NAMESPACE}"
+        subjects:
+          - kind: "ServiceAccount"
+            name: "lemonade-stand-assistant-installer"
+            namespace: "default"
+  defaultNamespace: "lemonade-stand-assistant"
+  quickstartResources:
+    namespaceScoped:
+      - apiGroups: [""]
+        resources: ["pods", "services", "secrets", "configmaps", "persistentvolumeclaims", "serviceaccounts"]
+        description: "Core application resources (FastAPI app, MinIO, detectors)"
+      - apiGroups: ["apps"]
+        resources: ["deployments", "replicasets", "statefulsets"]
+        description: "Application workloads (chat app, detectors, dashboard, MinIO)"
+      - apiGroups: ["route.openshift.io"]
+        resources: ["routes"]
+        description: "Application ingress (chat UI, Shiny dashboard)"
+      - apiGroups: ["serving.kserve.io"]
+        resources: ["servingruntimes", "inferenceservices"]
+        description: "KServe model serving (LLM, HAP detector, prompt injection detector)"
+      - apiGroups: ["trustyai.opendatahub.io"]
+        resources: ["guardrailsorchestrators"]
+        description: "TrustyAI guardrails orchestrator"
+      - apiGroups: ["monitoring.coreos.com"]
+        resources: ["servicemonitors"]
+        description: "Prometheus metrics collection (optional)"
+
+parameters:
+  secrets:
+    - name: "model.api_key"
+      displayName: "Model API Key"
+      description: "API key for authenticating with the external model endpoint (MaaS mode only)"
+      type: "password"
+      required: false
+      llmGuidance: "Only required in MaaS/BYO model mode. API key for authenticating with the external model endpoint. Only ask for this when the user wants to bring their own model. Treat as sensitive — do not log or display."
+  configuration:
+    - name: "model.name"
+      displayName: "Model Name"
+      description: "Name of the external model to use (e.g., 'gpt-4', 'llama-3.1-70b')"
+      type: "string"
+      required: false
+      llmGuidance: "Only set this when the user wants to bring their own model (MaaS mode). This is the model name as recognized by the external endpoint. If not set, the quickstart deploys Llama 3.2 3B locally."
+    - name: "model.endpoint"
+      displayName: "Model Endpoint"
+      description: "Hostname of the external OpenAI-compatible API endpoint"
+      type: "string"
+      required: false
+      llmGuidance: "Required when model.name is set. This is the hostname of an OpenAI-compatible API endpoint. Do not include the protocol or path — just the hostname (e.g., 'api.openai.com')."
+    - name: "model.port"
+      displayName: "Model Endpoint Port"
+      description: "Port for the external model endpoint"
+      type: "integer"
+      required: false
+      default: 443
+      llmGuidance: "Port for the external model endpoint. Typically 443 for cloud-hosted APIs. Only relevant when model.endpoint is set."
+    - name: "detectors.hap.useGpu"
+      displayName: "Enable GPU for HAP Detector"
+      description: "Enable GPU acceleration for the IBM HAP content safety detector"
+      type: "boolean"
+      required: false
+      default: false
+      llmGuidance: "Enable GPU acceleration for the HAP content safety detector. Only set to true if the cluster has additional GPU capacity beyond what the LLM requires. Improves inference speed but is not required for functionality."
+    - name: "detectors.promptInjection.useGpu"
+      displayName: "Enable GPU for Prompt Injection Detector"
+      description: "Enable GPU acceleration for the DeBERTa v3 prompt injection detector"
+      type: "boolean"
+      required: false
+      default: false
+      llmGuidance: "Enable GPU acceleration for the prompt injection detector. Same GPU capacity considerations as the HAP detector. Each detector enabled with GPU adds 1 nvidia.com/gpu to resource requirements."
+    - name: "gpu.tolerationKeys"
+      displayName: "GPU Taint Toleration Keys"
+      description: "Comma-separated list of Kubernetes taint keys for GPU node scheduling. Overrides auto-detection."
+      type: "string"
+      required: false
+      llmGuidance: "Only set this if the cluster uses non-standard taint keys on GPU nodes. By default, the installer auto-detects NoSchedule taints on GPU nodes. If the user provides a value (e.g., 'g5-gpu,g6e-gpu'), it completely replaces auto-detection. The standard default is 'nvidia.com/gpu'. Ask the user to check their cluster's GPU node taints if pods fail to schedule."
+
+status:
+  endpoint:
+    path: "/health"
+    description: "Returns health status of the lemonade stand chat application"
+  pollingInterval: "10s"
+  timeout: "20m"
+
+access:
+  endpoints:
+    - name: "lemonade-stand"
+      displayName: "Lemonade Stand Chat"
+      type: "route"
+      path: "/"
+      description: "Main AI-powered customer service chat interface"
+      public: true
+      authentication: "none"
+    - name: "shiny-dashboard"
+      displayName: "Monitoring Dashboard"
+      type: "route"
+      path: "/"
+      description: "Real-time Shiny dashboard showing guardrail metrics and request statistics"
+      public: true
+      authentication: "none"
+
+cleanup:
+  dataDescription: |
+    Detector model weights stored in MinIO (50 GiB PVC). No user data is persisted — chat
+    conversations are not saved. Dashboard metrics are held in-memory and reset on pod restart.
+  warning: |
+    Uninstalling will remove all deployed components including the MinIO storage with downloaded
+    detector models. A fresh install will need to re-download models from Huggingface (~5-10 minutes).
+
+documentation:
+  readme: "https://github.com/rh-ai-quickstart/lemonade-stand-assistant/blob/main/README.md"
+
+llmContext:
+  whenToRecommend: |
+    Recommend when users ask about AI safety, content moderation, guardrails for LLMs, building
+    safe customer-facing chatbots, or demonstrating TrustyAI capabilities. Also relevant when users
+    need a reference architecture for deploying multiple detector models alongside an LLM with
+    real-time content filtering.
+  faq:
+    - question: "Do I need a GPU?"
+      answer: "A GPU is required for the default deployment mode which runs Llama 3.2 locally. You can avoid the GPU requirement by bringing your own model endpoint (MaaS mode)."
+    - question: "How do I use my own model instead of Llama 3.2?"
+      answer: "Set model.name, model.endpoint, model.port, and model.api_key Helm values to point to any OpenAI-compatible API endpoint."
+    - question: "What guardrails are included?"
+      answer: "Three detectors: IBM Granite Guardian HAP 125M for harmful content, DeBERTa v3 for prompt injection detection, and Lingua for language identification. All run as separate inference services."
+    - question: "How long does deployment take?"
+      answer: "15-20 minutes. Most time is spent downloading detector models from Huggingface and waiting for inference services to become ready."
+    - question: "Can I add custom guardrails?"
+      answer: "The GuardrailsOrchestrator CRD from TrustyAI supports additional detectors. You can add new detector deployments and reference them in the orchestrator configuration."
