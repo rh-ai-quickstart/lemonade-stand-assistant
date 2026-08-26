@@ -28,6 +28,16 @@ detect_gpu_tolerations() {
   echo "$json"
 }
 
+# Append a string-typed Helm override to the helm_args array.
+# Uses --set-string so values are never coerced to bool/number, and
+# backslash-escapes literal commas that Helm would otherwise treat as
+# --set multi-value delimiters (e.g. "Red Hat, Inc.").
+append_set_string() {
+  local key="$1" value="$2"
+  value="${value//,/\\,}"
+  helm_args+=("--set-string" "${key}=${value}")
+}
+
 deploy_quickstart() {
   local ns="$TARGET_NAMESPACE"
 
@@ -47,18 +57,19 @@ deploy_quickstart() {
     "--timeout" "15m"
   )
 
-  # MaaS mode: pass model configuration if provided
+  # MaaS mode: pass model configuration if provided.
+  # name/endpoint/api_key are free text -> --set-string; port is numeric.
   if [[ -n "${MODEL_NAME:-}" ]]; then
-    helm_args+=("--set" "model.name=${MODEL_NAME}")
+    append_set_string "model.name" "$MODEL_NAME"
   fi
   if [[ -n "${MODEL_ENDPOINT:-}" ]]; then
-    helm_args+=("--set" "model.endpoint=${MODEL_ENDPOINT}")
+    append_set_string "model.endpoint" "$MODEL_ENDPOINT"
   fi
   if [[ -n "${MODEL_PORT:-}" ]]; then
     helm_args+=("--set" "model.port=${MODEL_PORT}")
   fi
   if [[ -n "${MODEL_API_KEY:-}" ]]; then
-    helm_args+=("--set" "model.api_key=${MODEL_API_KEY}")
+    append_set_string "model.api_key" "$MODEL_API_KEY"
   fi
 
   # GPU tolerations: use provided value or auto-detect from cluster
