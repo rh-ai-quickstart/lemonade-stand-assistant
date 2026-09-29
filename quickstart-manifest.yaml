@@ -130,7 +130,7 @@ deployment:
   supportedModes:
     - "DEMO"
   installer:
-    image: "quay.io/rh-ai-quickstart/lemonade-stand-assistant-installer:1.0.0"
+    image: "quay.io/rh-ai-quickstart/lemonade-stand-assistant-installer:1.0.0@sha256:9d9147810d0a9c9486c956ec613e236a34e5766851b56ee21ae36cca19b7b44a"
     command: ["/installer/entrypoint.sh"]
     requiredEnv:
       - "TARGET_NAMESPACE"
@@ -139,10 +139,8 @@ deployment:
     rbac:
       serviceAccount:
         name: "lemonade-stand-assistant-installer"
-        namespace: "default"
-      defaultNamespaceRole:
+      jobNamespaceRole:
         name: "lemonade-stand-assistant-installer"
-        namespace: "default"
         rules:
           - apiGroups: [""]
             resources: ["pods", "configmaps"]
@@ -150,16 +148,14 @@ deployment:
           - apiGroups: ["batch"]
             resources: ["jobs"]
             verbs: ["get", "list", "watch"]
-      defaultNamespaceRoleBinding:
+      jobNamespaceRoleBinding:
         name: "lemonade-stand-assistant-installer"
-        namespace: "default"
         roleRef:
           kind: "Role"
           name: "lemonade-stand-assistant-installer"
         subjects:
           - kind: "ServiceAccount"
             name: "lemonade-stand-assistant-installer"
-            namespace: "default"
       clusterRole:
         name: "lemonade-stand-assistant-installer-${TARGET_NAMESPACE}"
         rules:
@@ -223,7 +219,6 @@ deployment:
         subjects:
           - kind: "ServiceAccount"
             name: "lemonade-stand-assistant-installer"
-            namespace: "default"
   defaultNamespace: "lemonade-stand-assistant"
   quickstartResources:
     namespaceScoped:

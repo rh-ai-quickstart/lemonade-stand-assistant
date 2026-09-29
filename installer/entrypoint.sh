@@ -20,6 +20,12 @@ _TERMINATION_MESSAGE=""
 _LOG_FILE="/tmp/installer-output.log"
 : > "$_LOG_FILE"
 
+# Namespace this installer pod is running in. This is where the log ConfigMap and
+# the Job's termination-message annotation are written. Discovered from the pod's
+# ServiceAccount token so the installer works regardless of which namespace the
+# platform (Navigator) schedules the Job in; falls back to "default".
+_SELF_NAMESPACE="$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace 2>/dev/null || echo default)"
+
 exec 3>&1 4>&2
 exec > >(tee -a "$_LOG_FILE") 2> >(tee -a "$_LOG_FILE" >&2)
 
@@ -81,11 +87,11 @@ write_log_configmap() {
   echo "$log_content" > "$log_tmpfile"
 
   oc create configmap "$cm_name" \
-    --namespace default \
+    --namespace "$_SELF_NAMESPACE" \
     --from-file=log="$log_tmpfile" 2>/dev/null || { true; return 0; }
 
   oc label configmap "$cm_name" \
-    --namespace default \
+    --namespace "$_SELF_NAMESPACE" \
     --overwrite \
     "app=lemonade-stand-assistant-installer" \
     "target-namespace=${target_ns}" \
@@ -122,17 +128,17 @@ write_termination_message() {
   local message=""
   case "$status" in
     success)
-      message="{\"status\":\"success\",\"action\":\"${action}\",\"namespace\":\"${namespace}\",\"logConfigMap\":{\"name\":\"${cm_name}\",\"namespace\":\"default\"}}"
+      message="{\"status\":\"success\",\"action\":\"${action}\",\"namespace\":\"${namespace}\",\"logConfigMap\":{\"name\":\"${cm_name}\",\"namespace\":\"${_SELF_NAMESPACE}\"}}"
       ;;
     prerequisites_failed)
-      message="{\"status\":\"prerequisites_failed\",\"action\":\"${action}\",\"namespace\":\"${namespace}\",\"missing\":${_TERMINATION_MESSAGE:-[]},\"logConfigMap\":{\"name\":\"${cm_name}\",\"namespace\":\"default\"}}"
+      message="{\"status\":\"prerequisites_failed\",\"action\":\"${action}\",\"namespace\":\"${namespace}\",\"missing\":${_TERMINATION_MESSAGE:-[]},\"logConfigMap\":{\"name\":\"${cm_name}\",\"namespace\":\"${_SELF_NAMESPACE}\"}}"
       ;;
     error)
       local err_msg="${_TERMINATION_MESSAGE:-Unexpected failure (exit code $exit_code)}"
       err_msg="${err_msg//\\/\\\\}"
       err_msg="${err_msg//\"/\\\"}"
       err_msg="${err_msg//$'\n'/\\n}"
-      message="{\"status\":\"error\",\"action\":\"${action}\",\"namespace\":\"${namespace}\",\"message\":\"${err_msg}\",\"recentLogs\":\"${recent_logs}\",\"logConfigMap\":{\"name\":\"${cm_name}\",\"namespace\":\"default\"}}"
+      message="{\"status\":\"error\",\"action\":\"${action}\",\"namespace\":\"${namespace}\",\"message\":\"${err_msg}\",\"recentLogs\":\"${recent_logs}\",\"logConfigMap\":{\"name\":\"${cm_name}\",\"namespace\":\"${_SELF_NAMESPACE}\"}}"
       ;;
   esac
 
@@ -140,7 +146,7 @@ write_termination_message() {
 
   if [[ -n "$job_name" && "$job_name" != "unknown" ]]; then
     oc annotate job "$job_name" \
-      --namespace default \
+      --namespace "$_SELF_NAMESPACE" \
       --overwrite \
       "lemonade-stand-assistant-installer/termination-message=$message" 2>/dev/null || true
   fi
