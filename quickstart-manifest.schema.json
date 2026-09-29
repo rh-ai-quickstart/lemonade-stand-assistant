@@ -1,0 +1,901 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://quickstart.redhat.com/schemas/quickstart-manifest-v1.json",
+  "title": "Quickstart Manifest",
+  "description": "Machine-readable metadata for integrating quickstart deployment with the OpenShift Project Navigator. Enables chat-driven and catalog UI discovery, evaluation, and deployment.",
+  "type": "object",
+  "required": ["apiVersion", "kind", "metadata"],
+  "additionalProperties": false,
+  "properties": {
+    "apiVersion": {
+      "type": "string",
+      "enum": ["quickstart.redhat.com/v1"],
+      "description": "Manifest schema version. Indicates the format/structure of this manifest file. Navigator uses this to determine how to parse the manifest."
+    },
+    "kind": {
+      "type": "string",
+      "enum": ["Quickstart"],
+      "description": "Resource kind identifier."
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Quickstart-specific metadata for identification and display.",
+      "required": ["name", "displayName", "shortDescription", "version"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z0-9]([a-z0-9-]*[a-z0-9])?$",
+          "description": "Unique identifier (DNS-compatible). Used as a stable key across Navigator operations."
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Human-readable display name shown in catalog and UI."
+        },
+        "shortDescription": {
+          "type": "string",
+          "maxLength": 160,
+          "description": "Short description (< 160 chars) for catalog tile display."
+        },
+        "longDescription": {
+          "type": "string",
+          "description": "Detailed description for the full quickstart view. Supports multi-line text."
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+",
+          "description": "Semantic version of this quickstart release. Referenced throughout the manifest (upgrade paths, installer image tag, etc.)."
+        },
+        "repository": {
+          "type": "string",
+          "format": "uri",
+          "description": "Source repository URL for quickstart-specific deployment configs."
+        },
+        "maintainer": {
+          "$ref": "#/$defs/maintainer"
+        },
+        "license": {
+          "type": "string",
+          "description": "SPDX license identifier (e.g., Apache-2.0, MIT)."
+        },
+        "lastUpdated": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp of the last manifest update."
+        }
+      }
+    },
+    "versioning": {
+      "type": "object",
+      "description": "Version management and upgrade support. Navigator uses this to determine if in-place upgrades are possible.",
+      "additionalProperties": false,
+      "properties": {
+        "upgradePaths": {
+          "type": "array",
+          "description": "Supported upgrade paths from older versions. All upgrade paths must have 'to' matching metadata.version.",
+          "items": {
+            "$ref": "#/$defs/upgradePath"
+          }
+        },
+        "installerImageTag": {
+          "type": "string",
+          "description": "Installer image tag that must match metadata.version. Ensures the installer has the correct upgrade logic for this version."
+        }
+      }
+    },
+    "classification": {
+      "type": "object",
+      "description": "Classification and discovery metadata for catalog search and filtering.",
+      "additionalProperties": false,
+      "properties": {
+        "industries": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Industry verticals this quickstart serves."
+        },
+        "useCases": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Business use cases addressed by this quickstart."
+        },
+        "aiCapabilities": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "AI/ML capabilities demonstrated by this quickstart."
+        },
+        "technologies": {
+          "type": "array",
+          "description": "Technologies featured in this quickstart.",
+          "items": {
+            "$ref": "#/$defs/technology"
+          }
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Searchable tags for catalog discovery."
+        },
+        "estimatedDeploymentTime": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Estimated time to deploy in minutes."
+        }
+      }
+    },
+    "prerequisites": {
+      "type": "object",
+      "description": "What must exist before deployment can begin.",
+      "additionalProperties": false,
+      "properties": {
+        "openshift": {
+          "type": "object",
+          "description": "OpenShift version requirements.",
+          "additionalProperties": false,
+          "properties": {
+            "minimumVersion": {
+              "type": "string",
+              "description": "Minimum supported OpenShift version."
+            },
+            "tested": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "OpenShift versions this quickstart has been tested against."
+            }
+          }
+        },
+        "operators": {
+          "type": "array",
+          "description": "Required or optional operators.",
+          "items": {
+            "$ref": "#/$defs/operatorRequirement"
+          }
+        },
+        "resources": {
+          "type": "object",
+          "description": "Cluster resource requirements.",
+          "additionalProperties": false,
+          "properties": {
+            "minimum": {
+              "$ref": "#/$defs/resourceRequirement",
+              "description": "Minimum resources required (e.g., CPU-only mode)."
+            },
+            "recommended": {
+              "$ref": "#/$defs/resourceRequirement",
+              "description": "Recommended resources for optimal performance (e.g., with GPU)."
+            }
+          }
+        },
+        "storageClasses": {
+          "type": "array",
+          "description": "Storage classes needed for persistent volumes.",
+          "items": {
+            "$ref": "#/$defs/storageClassRequirement"
+          }
+        },
+        "externalServices": {
+          "type": "array",
+          "description": "External service dependencies (optional or required).",
+          "items": {
+            "$ref": "#/$defs/externalService"
+          }
+        }
+      }
+    },
+    "deployment": {
+      "type": "object",
+      "description": "Deployment configuration used by Navigator to run the installer.",
+      "additionalProperties": false,
+      "properties": {
+        "supportedActions": {
+          "type": "array",
+          "description": "Deployment actions this quickstart supports. Navigator uses this to determine which actions to expose to users.",
+          "items": {
+            "type": "string",
+            "enum": ["CHECK_PRE_REQS", "STATUS", "INSTALL", "UNINSTALL_DELETE_ALL", "UNINSTALL_KEEP_DATA", "UPGRADE"]
+          }
+        },
+        "supportedModes": {
+          "type": "array",
+          "description": "Installation modes this quickstart supports. Navigator uses this to validate the INSTALL_MODE parameter.",
+          "items": {
+            "type": "string",
+            "enum": ["DEMO", "PRODUCTION"]
+          }
+        },
+        "installer": {
+          "type": "object",
+          "description": "Installer container image configuration.",
+          "required": ["image"],
+          "additionalProperties": false,
+          "properties": {
+            "image": {
+              "type": "string",
+              "description": "Full container image reference (registry/name:tag)."
+            },
+            "command": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Container entrypoint command override."
+            },
+            "requiredEnv": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Environment variables the installer expects to be set."
+            },
+            "rbac": {
+              "$ref": "#/$defs/installerRbac"
+            }
+          }
+        },
+        "defaultNamespace": {
+          "type": "string",
+          "description": "Default target namespace for deployment (can be overridden by user)."
+        },
+        "quickstartResources": {
+          "type": "object",
+          "description": "Resources deployed by the quickstart (for catalog display and dependency checking). Separate from installer RBAC.",
+          "additionalProperties": false,
+          "properties": {
+            "namespaceScoped": {
+              "type": "array",
+              "description": "Namespace-scoped resources created by the quickstart.",
+              "items": {
+                "$ref": "#/$defs/resourceDescription"
+              }
+            },
+            "clusterScoped": {
+              "type": "array",
+              "description": "Cluster-scoped resources created by the quickstart.",
+              "items": {
+                "$ref": "#/$defs/resourceDescription"
+              }
+            }
+          }
+        }
+      }
+    },
+    "parameters": {
+      "type": "object",
+      "description": "Configuration parameters that the user can set before or during deployment.",
+      "additionalProperties": false,
+      "properties": {
+        "secrets": {
+          "type": "array",
+          "description": "Secrets that must be generated or provided by the user.",
+          "items": {
+            "$ref": "#/$defs/parameter"
+          }
+        },
+        "configuration": {
+          "type": "array",
+          "description": "Configuration options for customizing the deployment.",
+          "items": {
+            "$ref": "#/$defs/parameter"
+          }
+        }
+      }
+    },
+    "status": {
+      "type": "object",
+      "description": "Status reporting configuration. Navigator uses this to poll quickstart health.",
+      "additionalProperties": false,
+      "properties": {
+        "endpoint": {
+          "type": "object",
+          "description": "Status API endpoint that Navigator polls.",
+          "additionalProperties": false,
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "URL path for the status endpoint."
+            },
+            "description": {
+              "type": "string",
+              "description": "Human-readable description of what the endpoint returns."
+            }
+          }
+        },
+        "responseFormat": {
+          "type": "object",
+          "description": "Expected response format from the status endpoint.",
+          "additionalProperties": false,
+          "properties": {
+            "schema": {
+              "type": "object",
+              "description": "JSON Schema describing the status response structure."
+            },
+            "example": {
+              "type": "object",
+              "description": "Example responses keyed by status value.",
+              "additionalProperties": { "type": "string" }
+            }
+          }
+        },
+        "pollingInterval": {
+          "type": "string",
+          "pattern": "^\\d+[smh]$",
+          "description": "How often Navigator checks status during deployment/upgrade (e.g., '10s', '1m')."
+        },
+        "timeout": {
+          "type": "string",
+          "pattern": "^\\d+[smh]$",
+          "description": "Maximum time to wait for status to become READY (e.g., '15m', '1h')."
+        }
+      }
+    },
+    "access": {
+      "type": "object",
+      "description": "Access information for the deployed application.",
+      "additionalProperties": false,
+      "properties": {
+        "endpoints": {
+          "type": "array",
+          "description": "How users access the deployed application.",
+          "items": {
+            "$ref": "#/$defs/accessEndpoint"
+          }
+        },
+        "defaultCredentials": {
+          "type": "array",
+          "description": "Default credentials for accessing the application.",
+          "items": {
+            "$ref": "#/$defs/credential"
+          }
+        }
+      }
+    },
+    "cleanup": {
+      "type": "object",
+      "description": "Cleanup and uninstallation information.",
+      "additionalProperties": false,
+      "properties": {
+        "dataDescription": {
+          "type": "string",
+          "description": "User-facing description of what data the quickstart stores."
+        },
+        "warning": {
+          "type": "string",
+          "description": "Warning shown before uninstallation explaining the consequences."
+        }
+      }
+    },
+    "documentation": {
+      "type": "object",
+      "description": "Links to user-facing documentation.",
+      "additionalProperties": {
+        "type": "string",
+        "format": "uri"
+      },
+      "properties": {
+        "readme": {
+          "type": "string",
+          "format": "uri",
+          "description": "Link to the main README."
+        },
+        "installGuide": {
+          "type": "string",
+          "format": "uri",
+          "description": "Link to the installation guide."
+        }
+      }
+    },
+    "llmContext": {
+      "type": "object",
+      "description": "Metadata for LLM prompting. Provides natural language hints for the Navigator chat interface.",
+      "additionalProperties": false,
+      "properties": {
+        "whenToRecommend": {
+          "type": "string",
+          "description": "Natural language guidance for when the Navigator should recommend this quickstart."
+        },
+        "faq": {
+          "type": "array",
+          "description": "Common questions users might ask about this quickstart.",
+          "items": {
+            "$ref": "#/$defs/faqItem"
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "maintainer": {
+      "type": "object",
+      "description": "Maintainer contact information.",
+      "required": ["name"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Maintainer name or team name."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Maintainer contact email."
+        }
+      }
+    },
+    "upgradePath": {
+      "type": "object",
+      "description": "Defines a supported upgrade path from one version to another.",
+      "required": ["from", "to"],
+      "additionalProperties": false,
+      "properties": {
+        "from": {
+          "type": "string",
+          "description": "Source version to upgrade from."
+        },
+        "to": {
+          "type": "string",
+          "description": "Target version to upgrade to. Must match metadata.version."
+        },
+        "notes": {
+          "type": "string",
+          "description": "User-facing upgrade notes. Navigator shows this before upgrade."
+        },
+        "estimatedTime": {
+          "type": "string",
+          "pattern": "^\\d+[smh]$",
+          "description": "Estimated upgrade duration (e.g., '20m', '1h')."
+        },
+        "reversible": {
+          "type": "boolean",
+          "description": "Whether this upgrade can be rolled back."
+        },
+        "requiresDataBackup": {
+          "type": "boolean",
+          "description": "Whether the user should back up data before upgrading."
+        },
+        "requiresDataMigration": {
+          "type": "boolean",
+          "description": "Whether database/data will be modified during upgrade."
+        },
+        "requiresManualSteps": {
+          "type": "boolean",
+          "description": "Whether manual intervention is needed beyond approval."
+        }
+      }
+    },
+    "technology": {
+      "type": "object",
+      "description": "A technology featured in the quickstart.",
+      "required": ["name", "role"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Technology name."
+        },
+        "role": {
+          "type": "string",
+          "description": "What role this technology plays in the quickstart."
+        },
+        "partner": {
+          "type": "string",
+          "description": "Partner or organization behind this technology."
+        }
+      }
+    },
+    "operatorRequirement": {
+      "type": "object",
+      "description": "An operator required or optional for the quickstart.",
+      "required": ["name", "required"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Operator display name."
+        },
+        "namespace": {
+          "type": "string",
+          "enum": ["target", "cluster"],
+          "description": "'target' means same namespace as quickstart, 'cluster' means cluster-wide."
+        },
+        "minimumVersion": {
+          "type": "string",
+          "description": "Minimum required operator version."
+        },
+        "required": {
+          "type": "boolean",
+          "description": "Whether this operator is required (true) or optional (false)."
+        },
+        "autoInstalled": {
+          "type": "boolean",
+          "description": "Whether the quickstart installer automatically installs this operator."
+        },
+        "installationHint": {
+          "type": "string",
+          "description": "User-facing hint about how to install this operator or what it provides."
+        }
+      }
+    },
+    "resourceRequirement": {
+      "type": "object",
+      "description": "Cluster resource requirements.",
+      "additionalProperties": false,
+      "properties": {
+        "cpu": {
+          "type": "string",
+          "description": "CPU requirement (e.g., '4', '8')."
+        },
+        "memory": {
+          "type": "string",
+          "description": "Memory requirement (e.g., '16Gi', '32Gi')."
+        },
+        "storage": {
+          "type": "string",
+          "description": "Storage requirement (e.g., '100Gi', '150Gi')."
+        },
+        "gpu": {
+          "type": "object",
+          "description": "GPU requirements (if applicable).",
+          "additionalProperties": false,
+          "properties": {
+            "count": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Number of GPUs required."
+            },
+            "memory": {
+              "type": "string",
+              "description": "GPU memory required (e.g., '16Gi')."
+            }
+          }
+        }
+      }
+    },
+    "storageClassRequirement": {
+      "type": "object",
+      "description": "A storage class required for persistent volumes.",
+      "required": ["name"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Storage class name. Use 'any-rwo' to indicate any ReadWriteOnce class."
+        },
+        "accessModes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["ReadWriteOnce", "ReadWriteMany", "ReadOnlyMany"]
+          },
+          "description": "Required access modes."
+        },
+        "minimumSize": {
+          "type": "string",
+          "description": "Minimum volume size (e.g., '10Gi')."
+        },
+        "usage": {
+          "type": "string",
+          "description": "What this storage is used for."
+        }
+      }
+    },
+    "externalService": {
+      "type": "object",
+      "description": "An external service dependency.",
+      "required": ["name", "required"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Service name."
+        },
+        "required": {
+          "type": "boolean",
+          "description": "Whether this service is required (true) or optional (false)."
+        },
+        "purpose": {
+          "type": "string",
+          "description": "What this service is used for."
+        },
+        "configurationHint": {
+          "type": "string",
+          "description": "User-facing hint about how to configure this service."
+        }
+      }
+    },
+    "rbacRule": {
+      "type": "object",
+      "description": "A Kubernetes RBAC rule.",
+      "required": ["apiGroups", "resources", "verbs"],
+      "additionalProperties": false,
+      "properties": {
+        "apiGroups": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "API groups (empty string for core group)."
+        },
+        "resources": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Resource types."
+        },
+        "verbs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["get", "list", "watch", "create", "update", "patch", "delete"]
+          },
+          "description": "Allowed operations."
+        }
+      }
+    },
+    "installerRbac": {
+      "type": "object",
+      "description": "RBAC requirements for the installer Job. Navigator creates these resources before running the Job and cleans them up after completion.",
+      "additionalProperties": false,
+      "properties": {
+        "serviceAccount": {
+          "type": "object",
+          "description": "ServiceAccount for the installer Job.",
+          "required": ["name", "namespace"],
+          "additionalProperties": false,
+          "properties": {
+            "name": { "type": "string" },
+            "namespace": { "type": "string" }
+          }
+        },
+        "defaultNamespaceRole": {
+          "type": "object",
+          "description": "Role in the default namespace for the installer pod to inspect its own environment.",
+          "required": ["name", "namespace", "rules"],
+          "additionalProperties": false,
+          "properties": {
+            "name": { "type": "string" },
+            "namespace": { "type": "string" },
+            "rules": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/rbacRule" }
+            }
+          }
+        },
+        "defaultNamespaceRoleBinding": {
+          "type": "object",
+          "description": "RoleBinding in the default namespace.",
+          "required": ["name", "namespace", "roleRef", "subjects"],
+          "additionalProperties": false,
+          "properties": {
+            "name": { "type": "string" },
+            "namespace": { "type": "string" },
+            "roleRef": {
+              "$ref": "#/$defs/rbacRef"
+            },
+            "subjects": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/rbacSubject" }
+            }
+          }
+        },
+        "clusterRole": {
+          "type": "object",
+          "description": "ClusterRole with all installation permissions. When bound via ClusterRoleBinding, namespace-scoped permissions apply to ALL namespaces.",
+          "required": ["name", "rules"],
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "ClusterRole name. May contain ${TARGET_NAMESPACE} which Navigator substitutes."
+            },
+            "rules": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/rbacRule" }
+            }
+          }
+        },
+        "clusterRoleBinding": {
+          "type": "object",
+          "description": "ClusterRoleBinding that binds the ClusterRole to the ServiceAccount.",
+          "required": ["name", "roleRef", "subjects"],
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "ClusterRoleBinding name. May contain ${TARGET_NAMESPACE} which Navigator substitutes."
+            },
+            "roleRef": {
+              "$ref": "#/$defs/rbacRef"
+            },
+            "subjects": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/rbacSubject" }
+            }
+          }
+        }
+      }
+    },
+    "rbacRef": {
+      "type": "object",
+      "description": "Reference to a Role or ClusterRole.",
+      "required": ["kind", "name"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["Role", "ClusterRole"],
+          "description": "Kind of the referenced role."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the referenced role. May contain ${TARGET_NAMESPACE}."
+        }
+      }
+    },
+    "rbacSubject": {
+      "type": "object",
+      "description": "RBAC subject (ServiceAccount, User, or Group).",
+      "required": ["kind", "name"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["ServiceAccount", "User", "Group"],
+          "description": "Subject kind."
+        },
+        "name": {
+          "type": "string",
+          "description": "Subject name."
+        },
+        "namespace": {
+          "type": "string",
+          "description": "Subject namespace (required for ServiceAccount)."
+        }
+      }
+    },
+    "resourceDescription": {
+      "type": "object",
+      "description": "Description of Kubernetes resources deployed by the quickstart.",
+      "required": ["apiGroups", "resources"],
+      "additionalProperties": false,
+      "properties": {
+        "apiGroups": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "API groups."
+        },
+        "resources": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Resource types."
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable description of these resources."
+        }
+      }
+    },
+    "parameter": {
+      "type": "object",
+      "description": "A configurable parameter for the quickstart.",
+      "required": ["name", "displayName", "type"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Parameter identifier (dot-notation, e.g., 'ollama.gpu.enabled')."
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Human-readable parameter name."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of what this parameter controls."
+        },
+        "type": {
+          "type": "string",
+          "enum": ["string", "boolean", "integer", "password"],
+          "description": "Parameter data type."
+        },
+        "required": {
+          "type": "boolean",
+          "description": "Whether this parameter must be provided."
+        },
+        "default": {
+          "description": "Default value if not provided by the user."
+        },
+        "llmGuidance": {
+          "type": "string",
+          "description": "Natural language guidance for the Navigator LLM on how to handle this parameter."
+        }
+      }
+    },
+    "accessEndpoint": {
+      "type": "object",
+      "description": "An application endpoint users can access.",
+      "required": ["name", "displayName", "type"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Endpoint identifier."
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Human-readable endpoint name."
+        },
+        "type": {
+          "type": "string",
+          "enum": ["route", "service", "ingress"],
+          "description": "How the endpoint is exposed."
+        },
+        "path": {
+          "type": "string",
+          "description": "URL path for this endpoint."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of what this endpoint provides."
+        },
+        "public": {
+          "type": "boolean",
+          "description": "Whether this endpoint is publicly accessible."
+        },
+        "authentication": {
+          "type": "string",
+          "enum": ["none", "required", "admin"],
+          "description": "Authentication level required to access this endpoint."
+        },
+        "credentialsSecret": {
+          "type": "string",
+          "description": "Name of the Kubernetes secret containing credentials for this endpoint."
+        }
+      }
+    },
+    "credential": {
+      "type": "object",
+      "description": "Default credentials for accessing the application.",
+      "required": ["name", "username"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Human-readable credential name."
+        },
+        "username": {
+          "type": "string",
+          "description": "Username or email for login."
+        },
+        "passwordParameter": {
+          "type": "string",
+          "description": "Reference to a parameter name that holds the password."
+        },
+        "passwordSecret": {
+          "type": "string",
+          "description": "Name of the Kubernetes secret containing the password."
+        },
+        "passwordKey": {
+          "type": "string",
+          "description": "Key within the secret that holds the password."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of this credential and its purpose."
+        },
+        "roles": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Roles assigned to this credential."
+        }
+      }
+    },
+    "faqItem": {
+      "type": "object",
+      "description": "A frequently asked question about the quickstart.",
+      "required": ["question", "answer"],
+      "additionalProperties": false,
+      "properties": {
+        "question": {
+          "type": "string",
+          "description": "The question."
+        },
+        "answer": {
+          "type": "string",
+          "description": "The answer."
+        }
+      }
+    }
+  }
+}
